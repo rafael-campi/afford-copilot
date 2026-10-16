@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from apoio import config_de_teste
+from apoio import config_de_teste, entrar_como
 from fastapi.testclient import TestClient
 
 from agentes import Explicacao, LLMRoteirizado, ModeloIndisponivel, ObjetivoExtraido
@@ -11,7 +11,7 @@ def conversa_com(
     llm: LLMRoteirizado, persona_id: str = "bruno", http: TestClient | None = None
 ) -> tuple[TestClient, str]:
     http = http or TestClient(create_app(config_de_teste(llm=llm)))
-    http.post("/v1/sessoes/demo", json={"persona_id": persona_id})
+    entrar_como(http, persona_id)
     response = http.post("/v1/conversas")
     assert response.status_code == 201
     return http, response.json()["id"]
@@ -143,7 +143,7 @@ def test_another_session_cannot_post_to_the_conversa() -> None:
     app = create_app(config_de_teste(llm=llm))
     _, conversa = conversa_com(llm, "bruno", TestClient(app))
     outra = TestClient(app)
-    outra.post("/v1/sessoes/demo", json={"persona_id": "ana"})
+    entrar_como(outra, "ana")
 
     response = outra.post(f"/v1/conversas/{conversa}/mensagens", json={"texto": "oi"})
 
@@ -157,7 +157,7 @@ class LLMForaDoAr:
 
 def test_an_unavailable_model_answers_503_with_a_clear_message() -> None:
     http = TestClient(create_app(config_de_teste(llm=LLMForaDoAr())))
-    http.post("/v1/sessoes/demo", json={"persona_id": "bruno"})
+    entrar_como(http, "bruno")
     conversa = http.post("/v1/conversas").json()["id"]
 
     response = http.post(f"/v1/conversas/{conversa}/mensagens", json={"texto": "oi"})

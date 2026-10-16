@@ -240,3 +240,48 @@ export async function login(email: string, senha: string): Promise<void> {
 export async function logout(): Promise<void> {
   await fetch('/api/v1/sessoes', { method: 'DELETE' })
 }
+
+export type Banco = { id: string; nome: string }
+export type Sessao = { conta: { nome: string; email: string; demo: boolean }; reautenticado: boolean }
+export type ConfirmacaoPendente = { id: string; acao: string; resumo: Record<string, unknown> }
+export type ConsentimentoInfo = {
+  id: string
+  banco: string
+  escopos: string[]
+  concedido_em: string
+  expira_em: string
+  situacao: 'ativo' | 'revogado' | 'expirado'
+}
+
+async function pedirJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init)
+  if (!response.ok) throw new RecusaDaApi(await detalhe(response, 'Algo deu errado. Tente de novo.'))
+  return (await response.json()) as T
+}
+
+const postJson = (corpo?: unknown): RequestInit => ({
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: corpo === undefined ? undefined : JSON.stringify(corpo),
+})
+
+export const fetchBancos = () => pedirJson<Banco[]>('/api/v1/bancos')
+export const fetchSessao = () => pedirJson<Sessao>('/api/v1/sessoes')
+export const fetchConsentimentos = () => pedirJson<ConsentimentoInfo[]>('/api/v1/consentimentos')
+
+export const pedirConsentimento = (banco: string, escopos: string[], mesesValidade: number) =>
+  pedirJson<ConfirmacaoPendente>(
+    '/api/v1/consentimentos',
+    postJson({ banco, escopos, meses_validade: mesesValidade }),
+  )
+
+export const revogarConsentimento = (id: string) =>
+  pedirJson<ConfirmacaoPendente>(`/api/v1/consentimentos/${id}`, { method: 'DELETE' })
+
+export async function reautenticar(senha: string): Promise<void> {
+  const response = await fetch('/api/v1/sessoes/reautenticar', postJson({ senha }))
+  if (!response.ok) throw new RecusaDaApi(await detalhe(response, 'Não foi possível confirmar.'))
+}
+
+export const confirmar = (id: string) =>
+  pedirJson<{ acao: string; feito: boolean }>(`/api/v1/confirmacoes/${id}/confirmar`, postJson())

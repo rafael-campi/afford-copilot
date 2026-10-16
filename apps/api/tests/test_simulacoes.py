@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any
 
-from apoio import config_de_teste
+from apoio import config_de_teste, entrar_como
 from fastapi.testclient import TestClient
 
 from api.main import create_app
@@ -20,7 +20,7 @@ CARRO_80_MIL = {"item": "carro", "valor_centavos": 8_000_000, "prazo_meses": 60}
 
 def sessao(persona_id: str, http: TestClient | None = None) -> TestClient:
     http = http or TestClient(create_app(config_de_teste()))
-    http.post("/v1/sessoes/demo", json={"persona_id": persona_id})
+    entrar_como(http, persona_id)
     return http
 
 

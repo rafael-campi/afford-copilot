@@ -18,7 +18,8 @@ import { Entrar } from './Entrar'
 import { doItem } from './format'
 import { Home } from './Home'
 import { ObjetivoForm } from './ObjetivoForm'
-import { SemExtrato } from './SemExtrato'
+import { Conectar } from './Conectar'
+import { Consentimentos } from './Consentimentos'
 
 type Estado =
   | { tipo: 'carregando' }
@@ -29,6 +30,7 @@ type Estado =
 
 type Tela =
   | { nome: 'home' }
+  | { nome: 'consentimentos' }
   | { nome: 'objetivo'; erro: string | null; enviando: boolean }
   | { nome: 'comparacao'; pedido: NovaSimulacao; simulacao: Simulacao; recalculando: boolean }
   | {
@@ -47,6 +49,7 @@ const ERRO_GERAL = 'Não foi possível simular agora. Tente de novo em alguns in
 export function App() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'carregando' })
   const [tela, setTela] = useState<Tela>({ nome: 'home' })
+  const [bancoSugerido, setBancoSugerido] = useState<string | null>(null)
 
   useEffect(() => {
     let ativo = true
@@ -60,6 +63,7 @@ export function App() {
 
   async function escolher(personaId: string) {
     setEstado({ tipo: 'carregando' })
+    setBancoSugerido(personaId)
     try {
       await entrarComo(personaId)
       setEstado(await fetchHome())
@@ -79,6 +83,7 @@ export function App() {
   }
 
   async function sair() {
+    setBancoSugerido(null)
     await logout()
     await recarregar()
   }
@@ -166,7 +171,12 @@ export function App() {
   if (estado.tipo === 'sem-sessao') {
     return <Entrar onEscolherPersona={escolher} onEntrou={recarregar} />
   }
-  if (estado.tipo === 'sem-extrato') return <SemExtrato onSair={sair} />
+  if (tela.nome === 'consentimentos') {
+    return <Consentimentos onVoltar={recarregar} onMudou={recarregar} />
+  }
+  if (estado.tipo === 'sem-extrato') {
+    return <Conectar bancoInicial={bancoSugerido} onConectado={recarregar} onSair={sair} />
+  }
 
   if (estado.tipo === 'pronto' && tela.nome === 'objetivo') {
     return (
@@ -215,6 +225,7 @@ export function App() {
       onEnviar={conversar}
       onFormulario={() => setTela({ nome: 'objetivo', erro: null, enviando: false })}
       onSair={sair}
+      onConsentimentos={() => setTela({ nome: 'consentimentos' })}
     />
   )
 }

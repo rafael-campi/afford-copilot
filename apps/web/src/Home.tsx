@@ -12,9 +12,10 @@ type Props = {
   onEnviar: (texto: string) => void
   onFormulario: () => void
   onSair: () => void
+  onConsentimentos: () => void
 }
 
-export function Home({ estado, onEnviar, onFormulario, onSair }: Props) {
+export function Home({ estado, onEnviar, onFormulario, onSair, onConsentimentos }: Props) {
   const [pedido, setPedido] = useState('')
   const [menu, setMenu] = useState(false)
   const [hora] = useState(() => new Date().getHours())
@@ -44,6 +45,9 @@ export function Home({ estado, onEnviar, onFormulario, onSair }: Props) {
           </button>
           {menu && (
             <div className="perfil-menu">
+              <button type="button" className="link-button" onClick={onConsentimentos}>
+                Meus consentimentos
+              </button>
               <button type="button" className="link-button" onClick={onSair}>
                 Sair
               </button>
