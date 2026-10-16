@@ -3,7 +3,10 @@ name = "afford-rag"
 version = "0.1.0"
 description = "Ingestion, search and cited answers over the official rules corpus."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["fastembed>=0.4", "pgvector>=0.3", "sqlalchemy>=2.0", "afford-agentes"]
+
+[tool.uv.sources]
+afford-agentes = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.12.22,<0.13.0"]

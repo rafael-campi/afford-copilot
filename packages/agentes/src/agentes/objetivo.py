@@ -2,11 +2,17 @@
 
 from dataclasses import dataclass, replace
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 SISTEMA_ENTENDER_PEDIDO = """\
 Você extrai o Objetivo de compra de uma pessoa a partir da mensagem dela, em português.
+
+intencao: "objetivo" quando a mensagem fala do que ela quer comprar ou muda algum dado da
+compra; "regra" quando é uma pergunta sobre como funcionam consórcio, financiamento, CET, IOF,
+lance, contemplação ou outra regra; "outro" para qualquer outro assunto. Nos casos "regra" e
+"outro", deixe os demais campos null.
 
 Campos:
 - item: o bem que ela quer comprar, em uma ou duas palavras minúsculas (ex.: "carro", "moto").
@@ -24,6 +30,7 @@ informa ou corrige; campos que ela não menciona ficam null. Não invente valore
 class ObjetivoExtraido(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    intencao: Literal["objetivo", "regra", "outro"] = Field(default="objetivo")
     item: str | None = Field(default=None)
     valor_reais: Decimal | None = Field(default=None)
     prazo_meses: int | None = Field(default=None)

@@ -167,6 +167,41 @@ describe('Conversa', () => {
     expect(screen.getByText(/Sobram cerca de R\$\s1\.900\/mês\. Sua margem segura é de até R\$\s2\.040/)).toBeInTheDocument()
   })
 
+  it('shows rule answers with their official sources', async () => {
+    fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/conversas': () => json({ id: 'c1' }, 201),
+      'POST /api/v1/conversas/c1/mensagens': () =>
+        json({
+          resposta: 'A contemplação acontece por sorteio ou por lance.',
+          objetivo: { item: null, valor_centavos: null, prazo_meses: null, entrada_centavos: 0 },
+          faltando: ['item', 'valor', 'prazo'],
+          novo_objetivo: false,
+          simulacao: null,
+          citacoes: [
+            {
+              documento: 'Lei nº 11.795/2008 (Sistema de Consórcio)',
+              rotulo: 'Art. 22',
+              url: 'https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2008/lei/l11795.htm',
+              versao: '8fd6197bc518',
+              capturado_em: '2026-10-15',
+              trecho: 'Art. 22. A contemplação é a atribuição ao consorciado do crédito...',
+            },
+          ],
+        }),
+    })
+
+    render(<App />)
+    await pedir('Como funciona o lance?')
+
+    await screen.findByText('A contemplação acontece por sorteio ou por lance.')
+    const fonte = screen.getByRole('link', { name: 'Lei nº 11.795/2008 (Sistema de Consórcio), Art. 22' })
+    expect(fonte).toHaveAttribute('href', 'https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2008/lei/l11795.htm')
+    await userEvent.click(screen.getByText('Ver trecho'))
+    expect(screen.getByText(/A contemplação é a atribuição ao consorciado/)).toBeVisible()
+    expect(screen.getByText('Versão consultada em 15/10/2026')).toBeInTheDocument()
+  })
+
   it('still offers the structured form', async () => {
     fakeApi({ 'GET /api/v1/home': () => json(homeBruno) })
 

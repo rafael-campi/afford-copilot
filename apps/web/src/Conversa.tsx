@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import type { GastoCategoria, ObjetivoConversa, ResumoOrcamento, Simulacao } from './api'
-import { formatarReais } from './format'
+import type { Citacao, GastoCategoria, ObjetivoConversa, ResumoOrcamento, Simulacao } from './api'
+import { formatarData, formatarReais } from './format'
 
-export type Mensagem = { autor: 'pessoa' | 'copiloto'; texto: string }
+export type Mensagem = { autor: 'pessoa' | 'copiloto'; texto: string; citacoes?: Citacao[] }
 
 type Props = {
   mensagens: Mensagem[]
@@ -44,6 +44,7 @@ export function Conversa(props: Props) {
         {mensagens.map((m, i) => (
           <li key={i} className={`mensagem mensagem-${m.autor}`}>
             {m.texto}
+            {m.citacoes && m.citacoes.length > 0 && <Citacoes citacoes={m.citacoes} />}
           </li>
         ))}
         {enviando && <li className="mensagem mensagem-copiloto">Pensando…</li>}
@@ -157,5 +158,24 @@ function Orcamento({ resumo, gastos }: { resumo: ResumoOrcamento; gastos: GastoC
         até {formatarReais(resumo.margem_segura_centavos)} por mês.
       </p>
     </section>
+  )
+}
+
+function Citacoes({ citacoes }: { citacoes: Citacao[] }) {
+  return (
+    <ul className="citacoes" aria-label="Fontes">
+      {citacoes.map((c) => (
+        <li key={`${c.documento}-${c.rotulo}`}>
+          <a href={c.url} target="_blank" rel="noreferrer">
+            {c.documento}, {c.rotulo}
+          </a>
+          <details>
+            <summary>Ver trecho</summary>
+            <p>{c.trecho}</p>
+            <p className="nota">Versão consultada em {formatarData(c.capturado_em)}</p>
+          </details>
+        </li>
+      ))}
+    </ul>
   )
 }

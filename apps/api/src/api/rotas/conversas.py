@@ -15,6 +15,7 @@ from agentes import (
 )
 from api.contexto import Contexto
 from api.fatos import fatos_da_simulacao
+from api.rotas.regras import CitacaoOut, citacoes_out, responder_regra
 from api.rotas.simulacoes import NovaSimulacao, SimulacaoOut, criar_simulacao
 
 
@@ -46,6 +47,7 @@ class RespostaCopiloto(BaseModel):
     faltando: list[str]
     novo_objetivo: bool
     simulacao: SimulacaoOut | None
+    citacoes: list[CitacaoOut] = []
 
 
 class ConversaOut(BaseModel):
@@ -117,7 +119,12 @@ def router(ctx: Contexto) -> APIRouter:
             return Simulado(simulacao=simulacao, fatos=fatos_da_simulacao(simulacao))
 
         nomes = list(fonte.nomes)
-        grafo = construir_grafo(ctx.llm_da_conta(conversa.conta_id), simular_opcoes, nomes)
+        grafo = construir_grafo(
+            ctx.llm_da_conta(conversa.conta_id),
+            simular_opcoes,
+            nomes,
+            lambda pergunta: responder_regra(ctx, conversa.conta_id, pergunta),
+        )
         try:
             entrada = {"mensagem": mensagem.texto, "objetivo": conversa.objetivo}
             estado: dict[str, Any] = grafo.invoke(entrada)
@@ -147,6 +154,7 @@ def router(ctx: Contexto) -> APIRouter:
             faltando=objetivo.faltando,
             novo_objetivo=bool(estado.get("novo_objetivo")),
             simulacao=simulacao,
+            citacoes=citacoes_out(estado["regra"]) if estado.get("regra") else [],
         )
 
     return rotas

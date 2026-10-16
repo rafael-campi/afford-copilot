@@ -180,7 +180,17 @@ export type ObjetivoConversa = {
   entrada_centavos: number
 }
 
+export type Citacao = {
+  documento: string
+  rotulo: string
+  url: string
+  versao: string
+  capturado_em: string
+  trecho: string
+}
+
 export type RespostaCopiloto = {
+  citacoes?: Citacao[]
   resposta: string
   objetivo: ObjetivoConversa
   faltando: string[]

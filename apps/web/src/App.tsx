@@ -126,7 +126,7 @@ export function App() {
           texto: `Novo objetivo: ${resposta.objetivo.item}. Os cenários ${doItem(atual.objetivo.item)} ficaram para trás.`,
         })
       }
-      respostas.push({ autor: 'copiloto', texto: resposta.resposta })
+      respostas.push({ autor: 'copiloto', texto: resposta.resposta, citacoes: resposta.citacoes })
       const anteriores = resposta.novo_objetivo ? [] : atual.simulacoes
       setTela({
         ...atual,
