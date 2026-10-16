@@ -1,26 +1,15 @@
-import { useEffect, useState } from 'react'
-import { fetchHome, type HomeData } from './api'
+import { useState } from 'react'
+import type { HomeData, ResumoOrcamento } from './api'
 import { formatarReais, saudacao } from './format'
 
-type Estado =
+export type EstadoHome =
   | { tipo: 'carregando' }
   | { tipo: 'erro' }
   | { tipo: 'pronto'; dados: HomeData }
 
-export function Home() {
-  const [estado, setEstado] = useState<Estado>({ tipo: 'carregando' })
+export function Home({ estado }: { estado: EstadoHome }) {
   const [pedido, setPedido] = useState('')
   const [hora] = useState(() => new Date().getHours())
-
-  useEffect(() => {
-    let ativo = true
-    fetchHome()
-      .then((dados) => ativo && setEstado({ tipo: 'pronto', dados }))
-      .catch(() => ativo && setEstado({ tipo: 'erro' }))
-    return () => {
-      ativo = false
-    }
-  }, [])
 
   return (
     <main className="home">
@@ -41,6 +30,9 @@ export function Home() {
       </header>
 
       <Resumo estado={estado} />
+      {estado.tipo === 'pronto' && estado.dados.resumo.margem_acima_da_sobra && (
+        <RessalvaMargem resumo={estado.dados.resumo} />
+      )}
 
       <form className="objetivo" onSubmit={(event) => event.preventDefault()}>
         <label htmlFor="pedido" className="objetivo-label">
@@ -81,7 +73,17 @@ export function Home() {
   )
 }
 
-function Resumo({ estado }: { estado: Estado }) {
+function RessalvaMargem({ resumo }: { resumo: ResumoOrcamento }) {
+  return (
+    <p className="ressalva" role="note">
+      A margem de {formatarReais(resumo.margem_segura_centavos)} é maior do que sobra por mês (
+      {formatarReais(resumo.sobra_mensal_centavos)}). Uma parcela nesse valor deixaria seu
+      orçamento no vermelho.
+    </p>
+  )
+}
+
+function Resumo({ estado }: { estado: EstadoHome }) {
   if (estado.tipo === 'erro') {
     return (
       <section className="resumo" role="alert">
