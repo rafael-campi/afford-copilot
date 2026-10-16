@@ -4,8 +4,36 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import { fakeApi, homeBruno, json } from './test-api'
 
-function simulacao(duracao: number, parcela: number, total: number, acima: boolean) {
+const consorcio48 = {
+  carta_credito_centavos: 8_000_000,
+  duracao_meses: 48,
+  parcela_centavos: 195_000,
+  custo_total_centavos: 9_795_600,
+  taxa_administracao_centavos: 1_200_000,
+  taxa_administracao_percentual: '15.00',
+  fundo_reserva_centavos: 160_000,
+  fundo_reserva_percentual: '2.00',
+  reajuste_anual_percentual: '4.50',
+  acima_da_margem: false,
+  janela: { melhor_caso_mes: 1, mediana_mes: 25, pior_caso_mes: 48, chance_ate_prazo_percentual: 100 },
+  duracoes_disponiveis: [36, 48, 60],
+  ressalvas: [
+    {
+      codigo: 'contemplacao_incerta',
+      texto: 'Sem lance, você pode receber a carta só no mês 48.',
+    },
+  ],
+}
+
+function simulacao(
+  duracao: number,
+  parcela: number,
+  total: number,
+  acima: boolean,
+  consorcio: typeof consorcio48 = consorcio48,
+) {
   return {
+    consorcio,
     id: `sim-${duracao}`,
     snapshot_id: 'config-taxa-fixa-2026-10',
     objetivo: { item: 'carro', valor_centavos: 8_000_000, prazo_meses: 60, entrada_centavos: 0 },
@@ -132,6 +160,41 @@ describe('Comparação', () => {
     expect(screen.getByRole('row', { name: /Juros\s*R\$\s67\.085/ })).toBeInTheDocument()
     expect(screen.getByRole('row', { name: /IOF\s*R\$\s2\.673/ })).toBeInTheDocument()
     expect(screen.getByRole('row', { name: /Tarifas\s*R\$\s1\.050/ })).toBeInTheDocument()
+  })
+
+  it('shows the Consórcio with its Janela de contemplação', async () => {
+    fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/simulacoes': () => json(simulacao(72, 199_114, 14_708_518, false), 201),
+    })
+
+    render(<App />)
+    await preencherObjetivo()
+
+    const card = await screen.findByRole('article', { name: 'Consórcio' })
+    expect(card).toHaveTextContent(/Parcela\s*R\$\s1\.950/)
+    expect(card).toHaveTextContent(/Custo total\s*R\$\s97\.956/)
+    expect(card).toHaveTextContent('mês 1 com lance')
+    expect(card).toHaveTextContent('mês 25 na mediana')
+    expect(card).toHaveTextContent('até o mês 48')
+    expect(card).toHaveTextContent('100% de chance de sair por sorteio até o seu Prazo')
+    expect(card).toHaveTextContent('Taxa de administração de 15,00%, fundo de reserva de 2,00%')
+    expect(card).toHaveTextContent('Sem lance, você pode receber a carta só no mês 48.')
+  })
+
+  it('re-simulates the Consórcio with another group Duração', async () => {
+    const fetchMock = fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/simulacoes': () => json(simulacao(72, 199_114, 14_708_518, false), 201),
+    })
+
+    render(<App />)
+    await preencherObjetivo()
+    await userEvent.selectOptions(await screen.findByLabelText('Duração do grupo'), '60')
+
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/v1/simulacoes', expect.objectContaining({
+      body: expect.stringContaining('"consorcio_duracao_meses":60'),
+    }))
   })
 
   it('explains when the API rejects the Objetivo', async () => {

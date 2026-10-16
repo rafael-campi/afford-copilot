@@ -62,9 +62,9 @@ export function App() {
     }
   }
 
-  async function mudarDuracao(duracaoMeses: number) {
+  async function mudarPedido(mudanca: Partial<NovaSimulacao>) {
     if (tela.nome !== 'comparacao') return
-    const pedido = { ...tela.pedido, duracao_meses: duracaoMeses }
+    const pedido = { ...tela.pedido, ...mudanca }
     setTela({ ...tela, recalculando: true })
     try {
       const simulacao = await criarSimulacao(pedido)
@@ -93,7 +93,7 @@ export function App() {
         simulacao={tela.simulacao}
         margemSeguraCentavos={estado.dados.resumo.margem_segura_centavos}
         recalculando={tela.recalculando}
-        onDuracao={mudarDuracao}
+        onMudar={mudarPedido}
         onVoltar={() => setTela({ nome: 'objetivo', erro: null, enviando: false })}
       />
     )
