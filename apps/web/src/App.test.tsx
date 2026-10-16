@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
+import { fakeApi, homeBruno, json } from './test-api'
 
 const personas = [
   { id: 'ana', nome: 'Ana', perfil: 'Folgada', descricao: 'Salário fixo, gastos bem abaixo da renda.' },
@@ -21,33 +22,6 @@ const homeAna = {
     { titulo: 'Consórcio ou financiamento?', descricao: 'Compare o custo total para um carro' },
   ],
 }
-
-const homeBruno = {
-  nome: 'Bruno',
-  resumo: {
-    entradas_centavos: 680_000,
-    gastos_centavos: 490_000,
-    sobra_mensal_centavos: 190_000,
-    margem_segura_centavos: 204_000,
-    margem_acima_da_sobra: true,
-  },
-  sugestoes: [],
-}
-
-type Rota = (init?: RequestInit) => Response
-
-function fakeApi(rotas: Record<string, Rota>) {
-  const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-    const chave = `${init?.method ?? 'GET'} ${url}`
-    const rota = rotas[chave]
-    if (!rota) throw new Error(`Unexpected request: ${chave}`)
-    return rota(init)
-  })
-  vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
-}
-
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
 
 afterEach(() => {
   vi.unstubAllGlobals()
