@@ -21,7 +21,6 @@ from api.rotas.simulacoes import NovaSimulacao, SimulacaoOut, criar_simulacao
 @dataclass
 class EstadoConversa:
     conta_id: str
-    persona_id: str
     objetivo: ObjetivoParcial = field(default_factory=ObjetivoParcial)
     simulacoes: list[SimulacaoOut] = field(default_factory=list)
 
@@ -76,9 +75,8 @@ def router(ctx: Contexto) -> APIRouter:
     @rotas.post("/v1/conversas", status_code=201)
     def criar(request: Request) -> NovaConversa:
         conversa_id = str(uuid.uuid4())
-        ctx.conversas[conversa_id] = EstadoConversa(
-            conta_id=ctx.conta_da_sessao(request).id, persona_id=ctx.persona_da_sessao(request)
-        )
+        ctx.fonte_da_sessao(request, auditar=False)  # 409 early when there is no Extrato
+        ctx.conversas[conversa_id] = EstadoConversa(conta_id=ctx.conta_da_sessao(request).id)
         return NovaConversa(id=conversa_id)
 
     @rotas.get("/v1/conversas/{conversa_id}")
@@ -91,7 +89,7 @@ def router(ctx: Contexto) -> APIRouter:
     @rotas.post("/v1/conversas/{conversa_id}/mensagens")
     def enviar(conversa_id: str, mensagem: NovaMensagem, request: Request) -> RespostaCopiloto:
         conversa = conversa_da_sessao(conversa_id, request)
-        persona_id = conversa.persona_id
+        fonte = ctx.fonte_da_conta(conversa.conta_id)
 
         def simular_opcoes(objetivo: ObjetivoParcial) -> Simulado | NaoSimulado:
             try:
@@ -107,7 +105,7 @@ def router(ctx: Contexto) -> APIRouter:
                     "A Entrada precisa ser menor do que o valor do item. Pode conferir?"
                 )
             try:
-                simulacao = criar_simulacao(ctx, conversa.conta_id, persona_id, dados)
+                simulacao = criar_simulacao(ctx, conversa.conta_id, fonte, dados)
             except HTTPException as erro:
                 if erro.status_code != 422:
                     raise
@@ -118,7 +116,7 @@ def router(ctx: Contexto) -> APIRouter:
                 )
             return Simulado(simulacao=simulacao, fatos=fatos_da_simulacao(simulacao))
 
-        nomes = [ctx.personas[persona_id].nome]
+        nomes = list(fonte.nomes)
         grafo = construir_grafo(ctx.llm_da_conta(conversa.conta_id), simular_opcoes, nomes)
         try:
             entrada = {"mensagem": mensagem.texto, "objetivo": conversa.objetivo}

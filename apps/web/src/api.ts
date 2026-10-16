@@ -285,3 +285,21 @@ export async function reautenticar(senha: string): Promise<void> {
 
 export const confirmar = (id: string) =>
   pedirJson<{ acao: string; feito: boolean }>(`/api/v1/confirmacoes/${id}/confirmar`, postJson())
+
+export type PedidoImportacao = {
+  id: string
+  acao: string
+  previa: {
+    transacoes: number
+    inicio: string
+    fim: string
+    exemplos: { data: string; descricao: string; valor_centavos: number }[]
+  }
+  aviso: string | null
+}
+
+export async function importarExtrato(arquivo: File): Promise<PedidoImportacao> {
+  const corpo = new FormData()
+  corpo.append('arquivo', arquivo)
+  return pedirJson<PedidoImportacao>('/api/v1/importacoes', { method: 'POST', body: corpo })
+}

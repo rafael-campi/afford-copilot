@@ -1,10 +1,10 @@
 """Persistence: accounts and the audit log (SQLAlchemy; Postgres in the stack, SQLite in tests)."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, create_engine
+from sqlalchemy import JSON, Date, DateTime, ForeignKey, Integer, String, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -82,3 +82,30 @@ class Confirmacao(Base):
     dados: Mapped[dict[str, Any]] = mapped_column(JSON)
     criada_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     usada_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+
+class Importacao(Base):
+    """An Extrato the person uploaded. The file itself is never stored, only its transactions."""
+
+    __tablename__ = "importacoes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    conta_id: Mapped[str] = mapped_column(ForeignKey("contas.id"), index=True)
+    formato: Mapped[str] = mapped_column(String(10))
+    inicio: Mapped[date] = mapped_column(Date)
+    fim: Mapped[date] = mapped_column(Date)
+    criada_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expira_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    """Set in the public demo: transactions are deleted when it passes."""
+
+
+class TransacaoImportada(Base):
+    __tablename__ = "transacoes_importadas"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    importacao_id: Mapped[str] = mapped_column(
+        ForeignKey("importacoes.id", ondelete="CASCADE"), index=True
+    )
+    data: Mapped[date] = mapped_column(Date)
+    descricao: Mapped[str] = mapped_column(String(255))
+    valor_centavos: Mapped[int] = mapped_column(Integer)
