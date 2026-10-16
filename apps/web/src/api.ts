@@ -298,8 +298,28 @@ export type PedidoImportacao = {
   aviso: string | null
 }
 
-export async function importarExtrato(arquivo: File): Promise<PedidoImportacao> {
+export type PedidoMapeamento = {
+  precisa_mapear: true
+  colunas: string[]
+  amostra: string[][]
+  sugestao: { data: string | null; descricao: string | null; valor: string | null }
+}
+
+export type MapaColunas = { data: string; descricao: string; valor: string }
+
+export async function importarExtrato(
+  arquivo: File,
+  mapa?: MapaColunas,
+): Promise<PedidoImportacao | PedidoMapeamento> {
   const corpo = new FormData()
   corpo.append('arquivo', arquivo)
-  return pedirJson<PedidoImportacao>('/api/v1/importacoes', { method: 'POST', body: corpo })
+  if (mapa) {
+    corpo.append('coluna_data', mapa.data)
+    corpo.append('coluna_descricao', mapa.descricao)
+    corpo.append('coluna_valor', mapa.valor)
+  }
+  return pedirJson<PedidoImportacao | PedidoMapeamento>('/api/v1/importacoes', {
+    method: 'POST',
+    body: corpo,
+  })
 }
