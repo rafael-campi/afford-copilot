@@ -5,8 +5,10 @@ from fastapi import HTTPException, Request
 
 from api.config import Config
 from extrato.orcamento import ResumoOrcamento, resumir_orcamento
+from mercado import RepositorioSnapshots, SnapshotTaxas
 from seed.gerador import ExtratoGerado, gerar_extrato
 from seed.personas import PERSONAS, Persona
+from simulador import SnapshotMercado
 
 
 @dataclass
@@ -25,6 +27,19 @@ class Contexto:
         if persona_id not in self.personas:
             raise HTTPException(status_code=401, detail="Entre como uma Persona primeiro.")
         return str(persona_id)
+
+    def mercado(self) -> tuple[SnapshotTaxas, SnapshotMercado]:
+        taxas = RepositorioSnapshots(self.config.diretorio_mercado).mais_recente()
+        if taxas is None:
+            raise HTTPException(
+                status_code=503, detail="Dados de mercado indisponíveis. Tente mais tarde."
+            )
+        idade = (self.config.hoje() - taxas.fim_periodo).days
+        return taxas, SnapshotMercado(
+            id=taxas.id,
+            financiamento_taxa_mensal=taxas.taxa_mediana_mensal,
+            desatualizado=idade > self.config.dias_ate_desatualizar,
+        )
 
     def extrato(self, persona_id: str) -> ExtratoGerado:
         return gerar_extrato(persona_id, self.config.seed)

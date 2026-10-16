@@ -1,13 +1,13 @@
 import pytest
+from apoio import config_de_teste
 from fastapi.testclient import TestClient
 
-from api.config import Config
 from api.main import create_app
 from seed.gerador import gerar_extrato
 
 
 def sessao(persona_id: str, seed: int = 2026) -> TestClient:
-    http = TestClient(create_app(Config(seed=seed)))
+    http = TestClient(create_app(config_de_teste(seed=seed)))
     http.post("/v1/sessoes/demo", json={"persona_id": persona_id})
     return http
 

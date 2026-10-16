@@ -3,12 +3,13 @@ name = "afford-api"
 version = "0.1.0"
 description = "HTTP API: accounts, consent, masking, audit and conversations."
 requires-python = ">=3.12"
-dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.32", "itsdangerous>=2.2", "afford-extrato", "afford-seed", "afford-simulador"]
+dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.32", "itsdangerous>=2.2", "afford-extrato", "afford-seed", "afford-simulador", "afford-mercado"]
 
 [tool.uv.sources]
 afford-extrato = { workspace = true }
 afford-seed = { workspace = true }
 afford-simulador = { workspace = true }
+afford-mercado = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.12.22,<0.13.0"]

@@ -82,3 +82,22 @@ def test_an_overridden_duracao_above_the_margem_is_flagged() -> None:
 
     assert financiamento.parcela_centavos == 219_136
     assert financiamento.acima_da_margem is True
+
+
+def test_financing_always_warns_that_the_rate_is_an_average() -> None:
+    objetivo = Objetivo(item="carro", valor_centavos=8_000_000, prazo_meses=60)
+
+    financiamento = simular(objetivo, BRUNO, mercado("0.018")).financiamento
+
+    assert [r.codigo for r in financiamento.ressalvas] == ["taxa_media"]
+
+
+def test_a_stale_market_snapshot_adds_a_ressalva() -> None:
+    objetivo = Objetivo(item="carro", valor_centavos=8_000_000, prazo_meses=60)
+    antigo = SnapshotMercado(
+        id="antigo", financiamento_taxa_mensal=Decimal("0.018"), desatualizado=True
+    )
+
+    financiamento = simular(objetivo, BRUNO, antigo).financiamento
+
+    assert [r.codigo for r in financiamento.ressalvas] == ["taxa_media", "dados_desatualizados"]

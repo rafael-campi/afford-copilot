@@ -1,20 +1,24 @@
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from decimal import Decimal
+from datetime import date
+from pathlib import Path
 
-from simulador import SnapshotMercado
-
-# Stand-in until real BCB snapshots land (ticket 04).
-MERCADO_PADRAO = SnapshotMercado(
-    id="config-taxa-fixa-2026-10", financiamento_taxa_mensal=Decimal("0.018")
-)
+RAIZ = Path(__file__).resolve().parents[4]
 
 
 @dataclass(frozen=True)
 class Config:
     margem_segura_percentual: int = 30
     seed: int = 2026
-    mercado: SnapshotMercado = MERCADO_PADRAO
+    diretorio_mercado: Path = field(
+        default_factory=lambda: Path(
+            os.environ.get("AFFORD_MERCADO_DIR", RAIZ / "data" / "mercado" / "snapshots")
+        )
+    )
+    dias_ate_desatualizar: int = 30
+    """BCB publishes each weekly period with a lag; past this many days it is stale."""
+    hoje: Callable[[], date] = date.today
     session_secret: str = field(
         default_factory=lambda: os.environ.get("AFFORD_SESSION_SECRET", "dev-only-secret")
     )

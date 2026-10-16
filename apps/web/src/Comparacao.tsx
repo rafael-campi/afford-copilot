@@ -1,5 +1,5 @@
 import type { Simulacao } from './api'
-import { formatarReais } from './format'
+import { formatarData, formatarPercentual, formatarReais } from './format'
 
 type Props = {
   simulacao: Simulacao
@@ -64,12 +64,47 @@ export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onDu
           </select>
         </label>
         <p className="caminho-texto">
-          Você pagaria cerca de {formatarReais(f.juros_centavos)} só de juros, com taxa de{' '}
-          {(Number(f.taxa_mensal) * 100).toLocaleString('pt-BR')}% ao mês.
+          Você pagaria cerca de {formatarReais(f.juros_centavos)} só de juros, com a taxa mediana
+          do mercado de {formatarPercentual(String(Number(f.taxa_mensal) * 100))} ao mês.
+        </p>
+        {f.ressalvas.length > 0 && (
+          <ul className="ressalvas">
+            {f.ressalvas.map((r) => (
+              <li key={r.codigo} className="ressalva">
+                {r.texto}
+              </li>
+            ))}
+          </ul>
+        )}
+        <details className="ranking">
+          <summary>Ver taxas de {f.ranking.length} instituições</summary>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Instituição</th>
+                <th scope="col">Taxa ao mês</th>
+              </tr>
+            </thead>
+            <tbody>
+              {f.ranking.map((t) => (
+                <tr key={t.instituicao}>
+                  <td>{t.instituicao}</td>
+                  <td>{formatarPercentual(t.taxa_mensal_percentual)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+        <p className="nota">
+          Fonte: Banco Central do Brasil, {formatarData(f.fonte.inicio_periodo)} a{' '}
+          {formatarData(f.fonte.fim_periodo)}.{' '}
+          <a href={f.fonte.url} target="_blank" rel="noreferrer">
+            Ver no site do BCB
+          </a>
         </p>
       </article>
 
-      <p className="nota">Simulação com dados fictícios e taxa de referência fixa.</p>
+      <p className="nota">Extrato fictício. Taxas reais publicadas pelo Banco Central.</p>
     </main>
   )
 }

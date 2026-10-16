@@ -64,6 +64,27 @@ export type Financiamento = {
   taxa_mensal: string
   acima_da_margem: boolean
   duracoes_disponiveis: number[]
+  ranking: TaxaInstituicao[]
+  fonte: Fonte
+  ressalvas: Ressalva[]
+}
+
+export type TaxaInstituicao = {
+  instituicao: string
+  taxa_mensal_percentual: string
+  taxa_anual_percentual: string
+}
+
+export type Fonte = {
+  descricao: string
+  inicio_periodo: string
+  fim_periodo: string
+  url: string
+}
+
+export type Ressalva = {
+  codigo: string
+  texto: string
 }
 
 export type Simulacao = {
