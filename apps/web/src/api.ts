@@ -127,6 +127,19 @@ export type Juntar = {
   ressalvas: Ressalva[]
 }
 
+export type Caminho = 'financiamento' | 'consorcio' | 'juntar'
+
+export type Recomendacao = {
+  caminho: Caminho | null
+  avaliacoes: { caminho: Caminho; motivo_codigo: string | null; motivo_texto: string | null }[]
+  ressalvas: Ressalva[]
+  ajustes: {
+    entrada_minima_centavos: number | null
+    prazo_minimo_meses: number | null
+    valor_maximo_centavos: number | null
+  } | null
+}
+
 export type Simulacao = {
   id: string
   snapshot_id: string
@@ -134,6 +147,7 @@ export type Simulacao = {
   financiamento: Financiamento
   consorcio: Consorcio
   juntar: Juntar
+  recomendacao: Recomendacao
 }
 
 export class ObjetivoInvalido extends Error {}

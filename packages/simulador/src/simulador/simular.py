@@ -1,14 +1,23 @@
+from dataclasses import replace
 from decimal import ROUND_HALF_UP, Decimal
 
 from simulador.consorcio import simular_consorcio
 from simulador.juntar import simular_juntar
 from simulador.modelo import (
+    Ajustes,
     Financiamento,
     Objetivo,
     Orcamento,
     Ressalva,
     Simulacao,
     SnapshotMercado,
+)
+from simulador.recomendacao import (
+    PASSO_CENTAVOS,
+    algum_serve,
+    menor_que_serve,
+    prazo_minimo,
+    recomendar,
 )
 
 TAXA_MEDIA = Ressalva(
@@ -100,13 +109,12 @@ def _ressalvas(mercado: SnapshotMercado) -> tuple[Ressalva, ...]:
     return (TAXA_MEDIA, CET_ESTIMADO)
 
 
-def simular(
+def _financiamento(
     objetivo: Objetivo,
     orcamento: Orcamento,
     mercado: SnapshotMercado,
-    duracao_meses: int | None = None,
-    consorcio_duracao_meses: int | None = None,
-) -> Simulacao:
+    duracao_meses: int | None,
+) -> Financiamento:
     financiado = objetivo.valor_centavos - objetivo.entrada_centavos
     taxa = mercado.financiamento_taxa_mensal
     if duracao_meses is None:
@@ -117,23 +125,76 @@ def simular(
     iof = iof_financiamento(financiado, taxa, parcela, duracao_meses)
     tarifas = mercado.tarifas_centavos
     cet = taxa_interna_mensal(financiado - iof - tarifas, parcela, duracao_meses)
+    return Financiamento(
+        duracao_meses=duracao_meses,
+        parcela_centavos=parcela,
+        custo_total_centavos=objetivo.entrada_centavos + parcela * duracao_meses + iof + tarifas,
+        juros_centavos=parcela * duracao_meses - financiado,
+        iof_centavos=iof,
+        tarifas_centavos=tarifas,
+        cet_mensal_percentual=_percentual(cet),
+        cet_anual_percentual=_percentual((1 + cet) ** 12 - 1),
+        acima_da_margem=parcela > orcamento.margem_segura_centavos,
+        ressalvas=_ressalvas(mercado),
+    )
+
+
+def _algum_serve(objetivo: Objetivo, orcamento: Orcamento, mercado: SnapshotMercado) -> bool:
+    return algum_serve(
+        _financiamento(objetivo, orcamento, mercado, None),
+        simular_consorcio(objetivo, orcamento, mercado, None),
+        simular_juntar(objetivo, orcamento, mercado),
+        objetivo.prazo_meses,
+    )
+
+
+def _ajustes(objetivo: Objetivo, orcamento: Orcamento, mercado: SnapshotMercado) -> Ajustes:
+    """Each adjustment on its own, with every other input unchanged and default Durações."""
+    valor = objetivo.valor_centavos
+    entrada = menor_que_serve(
+        objetivo.entrada_centavos + PASSO_CENTAVOS,
+        valor - PASSO_CENTAVOS,
+        lambda e: _algum_serve(replace(objetivo, entrada_centavos=e), orcamento, mercado),
+    )
+    # A cheaper item helps monotonically, so search the discount instead of the value.
+    desconto = menor_que_serve(
+        PASSO_CENTAVOS,
+        valor - objetivo.entrada_centavos - PASSO_CENTAVOS,
+        lambda d: _algum_serve(replace(objetivo, valor_centavos=valor - d), orcamento, mercado),
+    )
+    return Ajustes(
+        entrada_minima_centavos=entrada,
+        prazo_minimo_meses=prazo_minimo(
+            _financiamento(objetivo, orcamento, mercado, None),
+            simular_consorcio(objetivo, orcamento, mercado, None),
+            simular_juntar(objetivo, orcamento, mercado),
+        ),
+        valor_maximo_centavos=None if desconto is None else valor - desconto,
+    )
+
+
+def simular(
+    objetivo: Objetivo,
+    orcamento: Orcamento,
+    mercado: SnapshotMercado,
+    duracao_meses: int | None = None,
+    consorcio_duracao_meses: int | None = None,
+) -> Simulacao:
+    financiamento = _financiamento(objetivo, orcamento, mercado, duracao_meses)
+    consorcio = simular_consorcio(objetivo, orcamento, mercado, consorcio_duracao_meses)
+    juntar = simular_juntar(objetivo, orcamento, mercado)
     return Simulacao(
         objetivo=objetivo,
         snapshot_id=mercado.id,
-        consorcio=simular_consorcio(objetivo, orcamento, mercado, consorcio_duracao_meses),
-        juntar=simular_juntar(objetivo, orcamento, mercado),
-        financiamento=Financiamento(
-            duracao_meses=duracao_meses,
-            parcela_centavos=parcela,
-            custo_total_centavos=(
-                objetivo.entrada_centavos + parcela * duracao_meses + iof + tarifas
-            ),
-            juros_centavos=parcela * duracao_meses - financiado,
-            iof_centavos=iof,
-            tarifas_centavos=tarifas,
-            cet_mensal_percentual=_percentual(cet),
-            cet_anual_percentual=_percentual((1 + cet) ** 12 - 1),
-            acima_da_margem=parcela > orcamento.margem_segura_centavos,
-            ressalvas=_ressalvas(mercado),
+        financiamento=financiamento,
+        consorcio=consorcio,
+        juntar=juntar,
+        recomendacao=recomendar(
+            objetivo,
+            orcamento,
+            financiamento,
+            consorcio,
+            juntar,
+            lambda: _ajustes(objetivo, orcamento, mercado),
         ),
     )

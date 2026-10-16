@@ -141,9 +141,36 @@ class Juntar:
 
 
 @dataclass(frozen=True)
+class Avaliacao:
+    caminho: str
+    """financiamento, consorcio or juntar."""
+    motivo_codigo: str | None
+    """Why it was not recommended: nao_entrega_no_prazo, acima_da_margem or custo_maior."""
+    motivo_texto: str | None
+
+
+@dataclass(frozen=True)
+class Ajustes:
+    """Smallest changes that would make some Caminho qualify, each on its own."""
+
+    entrada_minima_centavos: int | None
+    prazo_minimo_meses: int | None
+    valor_maximo_centavos: int | None
+
+
+@dataclass(frozen=True)
+class Recomendacao:
+    caminho: str | None
+    avaliacoes: tuple[Avaliacao, ...]
+    ressalvas: tuple[Ressalva, ...]
+    ajustes: Ajustes | None
+
+
+@dataclass(frozen=True)
 class Simulacao:
     objetivo: Objetivo
     snapshot_id: str
     financiamento: Financiamento
     consorcio: Consorcio
     juntar: Juntar
+    recomendacao: Recomendacao

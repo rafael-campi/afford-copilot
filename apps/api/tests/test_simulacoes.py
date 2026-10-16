@@ -236,3 +236,27 @@ def test_without_focus_projections_simulation_is_unavailable(tmp_path: Path) -> 
     http = sessao("bruno", TestClient(create_app(config_de_teste(diretorio_focus=tmp_path))))
 
     assert http.post("/v1/simulacoes", json=CARRO_80_MIL).status_code == 503
+
+
+def test_every_simulacao_carries_a_recomendacao_with_reasons() -> None:
+    recomendacao = sessao("bruno").post("/v1/simulacoes", json=CARRO_80_MIL).json()["recomendacao"]
+
+    assert recomendacao["caminho"] == "juntar"
+    assert {a["caminho"]: a["motivo_codigo"] for a in recomendacao["avaliacoes"]} == {
+        "financiamento": "custo_maior",
+        "consorcio": "custo_maior",
+        "juntar": None,
+    }
+    assert [r["codigo"] for r in recomendacao["ressalvas"]] == ["acima_da_sobra"]
+    assert recomendacao["ajustes"] is None
+
+
+def test_when_nothing_fits_the_recomendacao_suggests_adjustments() -> None:
+    response = sessao("diego").post("/v1/simulacoes", json={**CARRO_80_MIL, "prazo_meses": 12})
+
+    recomendacao = response.json()["recomendacao"]
+    assert recomendacao["caminho"] is None
+    ajustes = recomendacao["ajustes"]
+    assert ajustes["entrada_minima_centavos"] > 0
+    assert ajustes["prazo_minimo_meses"] > 12
+    assert 0 < ajustes["valor_maximo_centavos"] < 8_000_000
