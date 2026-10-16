@@ -147,6 +147,26 @@ describe('Conversa', () => {
     expect(screen.queryByRole('button', { name: 'Comparar as 3 opções' })).not.toBeInTheDocument()
   })
 
+  it('shows where the money goes and the Margem segura', async () => {
+    fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/conversas': () => json({ id: 'c1' }, 201),
+      'POST /api/v1/conversas/c1/mensagens': () =>
+        json({ resposta: 'Recomendo juntar.', objetivo: objetivoCompleto, faltando: [], novo_objetivo: false, simulacao: simulacao(72, 199_114, 14_708_518, false) }),
+    })
+
+    render(<App />)
+    await pedir('Quero um carro de 80 mil em até 5 anos')
+
+    const gastos = await screen.findByRole('list', { name: 'Para onde vai seu dinheiro' })
+    expect(gastos).toHaveTextContent(/Moradia\s*R\$\s2\.000/)
+    expect(gastos).toHaveTextContent(/Mercado\s*R\$\s1\.100/)
+    expect(gastos).toHaveTextContent(/Delivery\s*R\$\s620/)
+    // Everything after the top three is grouped: 400 + 380 + 250 + 150.
+    expect(gastos).toHaveTextContent(/Outros\s*R\$\s1\.180/)
+    expect(screen.getByText(/Sobram cerca de R\$\s1\.900\/mês\. Sua margem segura é de até R\$\s2\.040/)).toBeInTheDocument()
+  })
+
   it('still offers the structured form', async () => {
     fakeApi({ 'GET /api/v1/home': () => json(homeBruno) })
 

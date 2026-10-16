@@ -1,10 +1,10 @@
+from collections import defaultdict
 from datetime import date
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 from api.contexto import Contexto
-from extrato.categorizacao import categorizar
 
 
 class ResumoOrcamento(BaseModel):
@@ -20,9 +20,15 @@ class Sugestao(BaseModel):
     descricao: str
 
 
+class GastoCategoria(BaseModel):
+    categoria: str
+    centavos: int
+
+
 class Home(BaseModel):
     nome: str
     resumo: ResumoOrcamento
+    gastos_por_categoria: list[GastoCategoria]
     sugestoes: list[Sugestao]
 
 
@@ -31,6 +37,7 @@ class Transacao(BaseModel):
     descricao: str
     valor_centavos: int
     categoria: str
+    categoria_fonte: str
 
 
 class Extrato(BaseModel):
@@ -49,6 +56,20 @@ SUGESTOES = [
 ]
 
 
+def _gastos_por_categoria(ctx: Contexto, persona_id: str) -> list[GastoCategoria]:
+    """Monthly average spending per category, largest first."""
+    categorizados = ctx.extrato_categorizado(persona_id)
+    meses = len({(c.transacao.data.year, c.transacao.data.month) for c in categorizados}) or 1
+    totais: dict[str, int] = defaultdict(int)
+    for c in categorizados:
+        if c.transacao.valor_centavos < 0:
+            totais[c.categoria] -= c.transacao.valor_centavos
+    return sorted(
+        (GastoCategoria(categoria=k, centavos=v // meses) for k, v in totais.items()),
+        key=lambda g: (-g.centavos, g.categoria),
+    )
+
+
 def router(ctx: Contexto) -> APIRouter:
     rotas = APIRouter()
 
@@ -65,6 +86,7 @@ def router(ctx: Contexto) -> APIRouter:
                 margem_segura_centavos=resumo.margem_segura_centavos,
                 margem_acima_da_sobra=resumo.margem_acima_da_sobra,
             ),
+            gastos_por_categoria=_gastos_por_categoria(ctx, persona_id),
             sugestoes=SUGESTOES,
         )
 
@@ -74,12 +96,13 @@ def router(ctx: Contexto) -> APIRouter:
         return Extrato(
             transacoes=[
                 Transacao(
-                    data=t.data,
-                    descricao=t.descricao,
-                    valor_centavos=t.valor_centavos,
-                    categoria=categorizar(t),
+                    data=c.transacao.data,
+                    descricao=c.transacao.descricao,
+                    valor_centavos=c.transacao.valor_centavos,
+                    categoria=c.categoria,
+                    categoria_fonte=c.fonte,
                 )
-                for t in ctx.extrato(persona_id).transacoes
+                for c in ctx.extrato_categorizado(persona_id)
             ]
         )
 

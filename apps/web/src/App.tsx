@@ -164,6 +164,8 @@ export function App() {
         mensagens={tela.mensagens}
         objetivo={tela.objetivo}
         cenarios={tela.simulacoes}
+        resumo={estado.dados.resumo}
+        gastos={estado.dados.gastos_por_categoria ?? []}
         enviando={tela.enviando}
         erro={tela.erro}
         onEnviar={conversar}

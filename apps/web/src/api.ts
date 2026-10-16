@@ -11,9 +11,15 @@ export type Sugestao = {
   descricao: string
 }
 
+export type GastoCategoria = {
+  categoria: string
+  centavos: number
+}
+
 export type HomeData = {
   nome: string
   resumo: ResumoOrcamento
+  gastos_por_categoria: GastoCategoria[]
   sugestoes: Sugestao[]
 }
 
