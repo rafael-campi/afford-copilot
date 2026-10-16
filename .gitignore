@@ -8,3 +8,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 .env
+
+# Eval reports are local; the baseline is committed after a reviewed run.
+evals/relatorios/
+evals/calibracao/pendentes.jsonl
