@@ -55,3 +55,30 @@ def criar_engine(url: str) -> Engine:
 
 def fabrica_de_sessoes(engine: Engine) -> sessionmaker[Session]:
     return sessionmaker(engine, expire_on_commit=False)
+
+
+class Consentimento(Base):
+    """Scoped, time-limited, revocable authorization to read a bank's Extrato."""
+
+    __tablename__ = "consentimentos"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    conta_id: Mapped[str] = mapped_column(ForeignKey("contas.id"), index=True)
+    banco: Mapped[str] = mapped_column(String(40))
+    escopos: Mapped[list[str]] = mapped_column(JSON)
+    concedido_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expira_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revogado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+
+class Confirmacao(Base):
+    """A sensitive action waiting for the person's explicit, reauthenticated confirmation."""
+
+    __tablename__ = "confirmacoes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    conta_id: Mapped[str] = mapped_column(ForeignKey("contas.id"), index=True)
+    acao: Mapped[str] = mapped_column(String(60))
+    dados: Mapped[dict[str, Any]] = mapped_column(JSON)
+    criada_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    usada_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)

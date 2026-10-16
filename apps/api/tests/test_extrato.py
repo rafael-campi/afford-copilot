@@ -1,5 +1,5 @@
 import pytest
-from apoio import CategorizadorPerfeito, config_de_teste
+from apoio import CategorizadorPerfeito, config_de_teste, entrar_como
 from fastapi.testclient import TestClient
 
 from api.main import create_app
@@ -11,7 +11,7 @@ def sessao(persona_id: str, seed: int = 2026, llm: object | None = None) -> Test
     if llm is not None:
         mudancas["llm"] = llm
     http = TestClient(create_app(config_de_teste(**mudancas)))
-    http.post("/v1/sessoes/demo", json={"persona_id": persona_id})
+    entrar_como(http, persona_id)
     return http
 
 

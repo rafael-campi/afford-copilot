@@ -78,7 +78,7 @@ def router(ctx: Contexto) -> APIRouter:
         persona_id = ctx.persona_da_sessao(request)
         resumo = ctx.orcamento(persona_id)
         return Home(
-            nome=ctx.personas[persona_id].nome,
+            nome=ctx.conta_da_sessao(request).nome,
             resumo=ResumoOrcamento(
                 entradas_centavos=resumo.entradas_centavos,
                 gastos_centavos=resumo.gastos_centavos,

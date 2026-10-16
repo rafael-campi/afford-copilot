@@ -7,6 +7,8 @@ class Persona:
     nome: str
     perfil: str
     descricao: str
+    artigo: str = "o"
+    """Portuguese article for the name: "do Bruno", "da Ana"."""
 
 
 PERSONAS: tuple[Persona, ...] = (
@@ -15,6 +17,7 @@ PERSONAS: tuple[Persona, ...] = (
         nome="Ana",
         perfil="Folgada",
         descricao="Salário fixo, gastos bem abaixo da renda.",
+        artigo="a",
     ),
     Persona(
         id="bruno",
@@ -27,6 +30,7 @@ PERSONAS: tuple[Persona, ...] = (
         nome="Carla",
         perfil="Renda variável",
         descricao="Freelancer com renda que muda bastante de um mês para o outro.",
+        artigo="a",
     ),
     Persona(
         id="diego",

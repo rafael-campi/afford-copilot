@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from apoio import config_de_teste
+from apoio import config_de_teste, entrar_como
 from fastapi.testclient import TestClient
 
 from agentes import Explicacao, LLMRoteirizado, ObjetivoExtraido
@@ -78,7 +78,7 @@ def test_logging_in_and_out() -> None:
 def test_personas_are_ready_made_demo_accounts() -> None:
     http = cliente()
 
-    http.post("/v1/sessoes/demo", json={"persona_id": "bruno"})
+    entrar_como(http, "bruno")
 
     assert http.get("/v1/sessoes").json()["conta"] == {
         "nome": "Bruno",
@@ -117,7 +117,7 @@ def test_reauthentication_lasts_five_minutes() -> None:
 
 def test_demo_accounts_reauthenticate_with_the_shown_password() -> None:
     http = cliente()
-    http.post("/v1/sessoes/demo", json={"persona_id": "ana"})
+    entrar_como(http, "ana")
 
     response = http.post("/v1/sessoes/reautenticar", json={"senha": "demo"})
 
@@ -145,7 +145,7 @@ def test_tool_and_model_calls_are_audited_without_their_content() -> None:
         }
     )
     http = cliente(llm=llm)
-    http.post("/v1/sessoes/demo", json={"persona_id": "bruno"})
+    entrar_como(http, "bruno")
     conversa = http.post("/v1/conversas").json()["id"]
     http.post(f"/v1/conversas/{conversa}/mensagens", json={"texto": "Quero um carro de 80 mil"})
 
@@ -153,6 +153,10 @@ def test_tool_and_model_calls_are_audited_without_their_content() -> None:
 
     assert [e["tipo"] for e in registro] == [
         "sessao_demo",
+        "ferramenta:solicitar_confirmacao",
+        "reautenticacao",
+        "consentimento_concedido",
+        "consentimento_usado",
         "modelo:entender_pedido",
         "ferramenta:simular_opcoes",
         "modelo:explicar_recomendacao",

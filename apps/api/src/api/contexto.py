@@ -1,14 +1,15 @@
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, Request
+from sqlalchemy import select
 
 from agentes import LLMClient, ModeloIndisponivel, RecusaDoModelo
 from agentes.anthropic_llm import AnthropicLLM
 from agentes.categorizacao import categorizar_restantes
 from api.auditoria import LLMAuditado
-from api.banco import Conta, EventoAuditoria, criar_engine, fabrica_de_sessoes
+from api.banco import Consentimento, Conta, EventoAuditoria, criar_engine, fabrica_de_sessoes
 from api.config import Config
 from extrato.categorizacao import OUTROS, pela_regra
 from extrato.orcamento import ResumoOrcamento, TransacaoBruta, resumir_orcamento
@@ -28,6 +29,11 @@ class TransacaoCategorizada:
 
 
 SEM_EXTRATO = "Conecte seu banco ou importe seu extrato."
+
+
+def _como_utc(momento: datetime) -> datetime:
+    """SQLite drops time zones; every stored moment is UTC."""
+    return momento if momento.tzinfo else momento.replace(tzinfo=UTC)
 
 
 @dataclass
@@ -74,12 +80,35 @@ class Contexto:
             raise HTTPException(status_code=401, detail="Entre na sua conta primeiro.")
         return conta
 
+    def consentimento_vigente(self, conta_id: str) -> Consentimento | None:
+        """The newest Consentimento that was not revoked (it may have expired)."""
+        with self.banco() as db:
+            return db.scalar(
+                select(Consentimento)
+                .where(Consentimento.conta_id == conta_id, Consentimento.revogado_em.is_(None))
+                .order_by(Consentimento.concedido_em.desc())
+            )
+
     def persona_da_sessao(self, request: Request) -> str:
-        """The Extrato source of the logged-in account (a Persona, for now)."""
+        """Tool `analisar_orcamento`'s gate: the Extrato the account's Consentimento covers.
+
+        Every successful read is audited against the Consentimento that allowed it.
+        """
         conta = self.conta_da_sessao(request)
-        if conta.persona_id is None:
+        consentimento = self.consentimento_vigente(conta.id)
+        if consentimento is None:
             raise HTTPException(status_code=409, detail=SEM_EXTRATO)
-        return conta.persona_id
+        if _como_utc(consentimento.expira_em) <= self.config.agora():
+            data = consentimento.expira_em.strftime("%d/%m/%Y")
+            raise HTTPException(
+                status_code=409, detail=f"Seu consentimento expirou em {data}. Conecte de novo."
+            )
+        if "transacoes" not in consentimento.escopos:
+            raise HTTPException(
+                status_code=409, detail="Seu consentimento não cobre suas transações."
+            )
+        self.auditar(conta.id, "consentimento_usado", {"consentimento_id": consentimento.id})
+        return consentimento.banco
 
     def reautenticado(self, request: Request) -> bool:
         marca = request.session.get("reautenticado_em")

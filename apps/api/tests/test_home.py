@@ -1,3 +1,4 @@
+import apoio
 import pytest
 from apoio import config_de_teste
 from fastapi.testclient import TestClient
@@ -11,8 +12,7 @@ def client() -> TestClient:
 
 def entrar_como(persona_id: str, http: TestClient | None = None) -> TestClient:
     http = http or client()
-    response = http.post("/v1/sessoes/demo", json={"persona_id": persona_id})
-    assert response.status_code == 204
+    apoio.entrar_como(http, persona_id)
     return http
 
 

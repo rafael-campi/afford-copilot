@@ -773,3 +773,56 @@ input {
   padding: 8px 14px;
   box-shadow: 0 4px 16px rgb(18 33 46 / 0.12);
 }
+
+.perfil-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.escopos {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface);
+}
+
+.escopo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.campo select {
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 0 12px;
+}
+
+.dialogo-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgb(18 33 46 / 0.45);
+  display: grid;
+  place-items: end center;
+  padding: 16px;
+}
+
+.dialogo {
+  width: 100%;
+  max-width: 430px;
+  background: var(--bg);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
