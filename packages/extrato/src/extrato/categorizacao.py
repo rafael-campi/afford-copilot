@@ -1,6 +1,6 @@
 """Rule-based categorization: a merchant dictionary first, 'Outros' for the rest.
 
-The LLM fallback for what the rules cannot place comes later (ticket 11).
+What no rule recognizes goes to the LLM (agentes.categorizacao), or stays in "Outros".
 """
 
 from extrato.orcamento import TransacaoBruta
@@ -38,11 +38,16 @@ DICIONARIO: tuple[tuple[str, str], ...] = (
 )
 
 
-def categorizar(transacao: TransacaoBruta) -> str:
+def pela_regra(transacao: TransacaoBruta) -> str | None:
+    """The rule's category, or None when no rule recognizes the description."""
     if transacao.valor_centavos > 0:
         return RENDA
     descricao = transacao.descricao.upper()
     for trecho, categoria in DICIONARIO:
         if trecho in descricao:
             return categoria
-    return OUTROS
+    return None
+
+
+def categorizar(transacao: TransacaoBruta) -> str:
+    return pela_regra(transacao) or OUTROS

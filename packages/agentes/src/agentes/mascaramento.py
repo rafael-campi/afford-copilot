@@ -3,6 +3,14 @@
 import re
 
 PADROES: tuple[tuple[re.Pattern[str], str], ...] = (
+    # Third-party names in transfers: "PIX ENVIADO JOAO S", "TED RECEBIDA MARIA F".
+    (
+        re.compile(
+            r"\b((?:PIX|TED|DOC)\s+(?:ENVIADO|ENVIADA|RECEBIDO|RECEBIDA|ENV|REC))\s+[^\d(]+?(?=\s*(?:\(|$))",
+            re.I,
+        ),
+        r"\1 [NOME]",
+    ),
     (re.compile(r"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b"), "[CPF]"),
     (re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b"), "[EMAIL]"),
     (re.compile(r"(?:\+?55\s?)?\(?\b\d{2}\)?\s?9?\d{4}-?\d{4}\b"), "[TELEFONE]"),

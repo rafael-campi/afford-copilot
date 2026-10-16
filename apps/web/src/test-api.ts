@@ -25,6 +25,15 @@ export const homeBruno = {
     margem_segura_centavos: 204_000,
     margem_acima_da_sobra: true,
   },
+  gastos_por_categoria: [
+    { categoria: 'Moradia', centavos: 200_000 },
+    { categoria: 'Mercado', centavos: 110_000 },
+    { categoria: 'Delivery', centavos: 62_000 },
+    { categoria: 'Transporte', centavos: 40_000 },
+    { categoria: 'Contas da casa', centavos: 38_000 },
+    { categoria: 'Lazer', centavos: 25_000 },
+    { categoria: 'Outros', centavos: 15_000 },
+  ],
   sugestoes: [],
 }
 

@@ -4,14 +4,25 @@ from typing import Any
 
 from fastapi import HTTPException, Request
 
-from agentes import LLMClient
+from agentes import LLMClient, ModeloIndisponivel, RecusaDoModelo
 from agentes.anthropic_llm import AnthropicLLM
+from agentes.categorizacao import categorizar_restantes
 from api.config import Config
-from extrato.orcamento import ResumoOrcamento, resumir_orcamento
+from extrato.categorizacao import OUTROS, pela_regra
+from extrato.orcamento import ResumoOrcamento, TransacaoBruta, resumir_orcamento
 from mercado import ProjecoesFocus, RepositorioFocus, RepositorioSnapshots, SnapshotTaxas
 from seed.gerador import ExtratoGerado, gerar_extrato
 from seed.personas import PERSONAS, Persona
 from simulador import Projecoes, SnapshotMercado
+from simulador.recomendacao import reais
+
+
+@dataclass(frozen=True)
+class TransacaoCategorizada:
+    transacao: TransacaoBruta
+    categoria: str
+    fonte: str
+    """regra or llm."""
 
 
 @dataclass
@@ -26,6 +37,7 @@ class Contexto:
     simulacoes: dict[str, tuple[str, Any]] = field(default_factory=dict)
     conversas: dict[str, Any] = field(default_factory=dict)
     _llm: LLMClient | None = None
+    _categorizados: dict[str, list[TransacaoCategorizada]] = field(default_factory=dict)
 
     def llm(self) -> LLMClient:
         if self._llm is None:
@@ -73,3 +85,37 @@ class Contexto:
         return resumir_orcamento(
             self.extrato(persona_id).transacoes, self.config.margem_segura_percentual
         )
+
+    def extrato_categorizado(self, persona_id: str) -> list[TransacaoCategorizada]:
+        """Rules first; what they miss goes to the model once per Persona.
+
+        When the model is unavailable the rest stays in Outros and nothing is cached,
+        so the next request tries again.
+        """
+        if persona_id in self._categorizados:
+            return self._categorizados[persona_id]
+        transacoes = self.extrato(persona_id).transacoes
+        regras = [pela_regra(t) for t in transacoes]
+        restantes = [
+            (i, t.descricao, reais(abs(t.valor_centavos)))
+            for i, (t, regra) in enumerate(zip(transacoes, regras, strict=True))
+            if regra is None
+        ]
+        try:
+            do_modelo = categorizar_restantes(
+                self.llm(), restantes, [self.personas[persona_id].nome]
+            )
+            guardar = True
+        except (ModeloIndisponivel, RecusaDoModelo):
+            do_modelo, guardar = {}, False
+        categorizados = [
+            TransacaoCategorizada(
+                transacao=t,
+                categoria=regra or do_modelo.get(i, OUTROS),
+                fonte="llm" if regra is None and i in do_modelo else "regra",
+            )
+            for i, (t, regra) in enumerate(zip(transacoes, regras, strict=True))
+        ]
+        if guardar:
+            self._categorizados[persona_id] = categorizados
+        return categorizados

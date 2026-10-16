@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import type { ObjetivoConversa, Simulacao } from './api'
+import type { GastoCategoria, ObjetivoConversa, ResumoOrcamento, Simulacao } from './api'
 import { formatarReais } from './format'
 
 export type Mensagem = { autor: 'pessoa' | 'copiloto'; texto: string }
@@ -8,6 +8,8 @@ type Props = {
   mensagens: Mensagem[]
   objetivo: ObjetivoConversa | null
   cenarios: Simulacao[]
+  resumo: ResumoOrcamento
+  gastos: GastoCategoria[]
   enviando: boolean
   erro: string | null
   onEnviar: (texto: string) => void
@@ -17,8 +19,8 @@ type Props = {
 }
 
 export function Conversa(props: Props) {
-  const { mensagens, objetivo, cenarios, enviando, erro, onEnviar, onComparar, onVerCenario, onVoltar } =
-    props
+  const { mensagens, objetivo, cenarios, resumo, gastos, enviando, erro } = props
+  const { onEnviar, onComparar, onVerCenario, onVoltar } = props
   const [texto, setTexto] = useState('')
 
   function enviar(event: FormEvent) {
@@ -48,6 +50,10 @@ export function Conversa(props: Props) {
       </ol>
 
       {objetivo && objetivo.item && <ChipsObjetivo objetivo={objetivo} />}
+
+      {objetivo && objetivo.item && gastos.length > 0 && (
+        <Orcamento resumo={resumo} gastos={gastos} />
+      )}
 
       {erro && (
         <p className="aviso" role="alert">
@@ -125,5 +131,31 @@ function Cenarios({ cenarios, onVer }: { cenarios: Simulacao[]; onVer: (indice: 
         )
       })}
     </ul>
+  )
+}
+
+const PRINCIPAIS = 3
+
+function Orcamento({ resumo, gastos }: { resumo: ResumoOrcamento; gastos: GastoCategoria[] }) {
+  const principais = gastos.filter((g) => g.categoria !== 'Outros').slice(0, PRINCIPAIS)
+  const resto = gastos
+    .filter((g) => !principais.includes(g))
+    .reduce((total, g) => total + g.centavos, 0)
+  const linhas = resto > 0 ? [...principais, { categoria: 'Outros', centavos: resto }] : principais
+  return (
+    <section className="orcamento-conversa">
+      <ul className="gastos" aria-label="Para onde vai seu dinheiro">
+        {linhas.map((g) => (
+          <li key={g.categoria}>
+            <span>{g.categoria}</span>
+            <span>{formatarReais(g.centavos)}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="caminho-texto">
+        Sobram cerca de {formatarReais(resumo.sobra_mensal_centavos)}/mês. Sua margem segura é de
+        até {formatarReais(resumo.margem_segura_centavos)} por mês.
+      </p>
+    </section>
   )
 }
