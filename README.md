@@ -2,7 +2,7 @@
 
 Independent AI copilot that helps a person decide how to pay for a vehicle: consórcio, financing, or saving until buying in cash. It reads the person's own statement with their consent, simulates the three Caminhos with deterministic code and public Banco Central data, and recommends one by a fixed rule.
 
-Status: early development (ticket 01 of 25). See the [V1 spec](docs/spec/v1-copiloto.md).
+Status: early development. The [V1 spec](docs/spec/v1-copiloto.md) is tracked in [issue #1](https://github.com/rafael-campi/afford-copilot/issues/1) and its sub-issues.
 
 ## Run it
 
