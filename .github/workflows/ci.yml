@@ -27,6 +27,28 @@ jobs:
       - name: Test
         run: uv run pytest
 
+  evals-modelo:
+    # Real-model evals cost money: they run only when the repository has the
+    # ANTHROPIC_API_KEY secret, and fail on drops against evals/baseline.json.
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.ANTHROPIC_API_KEY != ''
+      - uses: astral-sh/setup-uv@v6
+        if: env.ANTHROPIC_API_KEY != ''
+        with:
+          version: "0.12.22"
+      - if: env.ANTHROPIC_API_KEY != ''
+        run: uv sync --frozen
+      - name: Evals with the model
+        if: env.ANTHROPIC_API_KEY != '' && hashFiles('evals/baseline.json') != ''
+        run: uv run python evals/rodar.py --comparar evals/baseline.json --tolerancia 5
+      - name: Skipped
+        if: env.ANTHROPIC_API_KEY == ''
+        run: echo "No ANTHROPIC_API_KEY secret; model evals skipped."
+
   web:
     runs-on: ubuntu-latest
     defaults:
