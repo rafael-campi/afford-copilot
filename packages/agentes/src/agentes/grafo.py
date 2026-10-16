@@ -1,6 +1,7 @@
 """The copilot's explicit graph (ADR 0008).
 
 entender_pedido -> responder_regra (a question about the rules, answered with citations)
+                -> fora_do_escopo (anything else) | so_veiculos (not a vehicle)
                 -> perguntar (something is missing)
                 -> simular -> explicar (the Recomendação, bounded by the facts)
 """
@@ -12,6 +13,7 @@ from typing import Any, TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from agentes.explicacao import SISTEMA_EXPLICAR, Explicacao, Fatos, so_numeros_dos_fatos
+from agentes.guardrails import FORA_DO_ESCOPO, SO_VEICULOS, e_veiculo, viola_politica
 from agentes.llm import LLMClient, ModeloIndisponivel, RecusaDoModelo
 from agentes.mascaramento import mascarar
 from agentes.objetivo import (
@@ -99,11 +101,24 @@ def construir_grafo(
         except (ModeloIndisponivel, RecusaDoModelo):
             return {"resposta": fatos.padrao}
         texto = explicacao.texto.strip()
-        return {"resposta": texto if texto and so_numeros_dos_fatos(texto, fatos) else fatos.padrao}
+        confiavel = texto and so_numeros_dos_fatos(texto, fatos) and not viola_politica(texto)
+        return {"resposta": texto if confiavel else fatos.padrao}
+
+    def fora_do_escopo(estado: Estado) -> Estado:
+        return {"resposta": FORA_DO_ESCOPO, "resultado": None}
+
+    def so_veiculos(estado: Estado) -> Estado:
+        return {"resposta": SO_VEICULOS, "resultado": None}
 
     def depois_de_entender(estado: Estado) -> str:
-        if estado.get("intencao") == "regra":
+        intencao = estado.get("intencao")
+        if intencao == "regra":
             return "responder_regra"
+        if intencao == "outro":
+            return "fora_do_escopo"
+        item = estado["objetivo"].item
+        if item is not None and not e_veiculo(item):
+            return "so_veiculos"
         return "perguntar" if estado["objetivo"].faltando else "simular"
 
     def depois_de_simular(estado: Estado) -> str:
@@ -116,11 +131,17 @@ def construir_grafo(
     grafo.add_node("simular", simular)  # type: ignore[call-overload]
     grafo.add_node("explicar", explicar)  # type: ignore[call-overload]
     grafo.add_node("responder_regra", regra)  # type: ignore[call-overload]
+    grafo.add_node("fora_do_escopo", fora_do_escopo)  # type: ignore[call-overload]
+    grafo.add_node("so_veiculos", so_veiculos)  # type: ignore[call-overload]
     grafo.add_edge(START, "entender_pedido")
     grafo.add_conditional_edges(
-        "entender_pedido", depois_de_entender, ["responder_regra", "perguntar", "simular"]
+        "entender_pedido",
+        depois_de_entender,
+        ["responder_regra", "fora_do_escopo", "so_veiculos", "perguntar", "simular"],
     )
     grafo.add_edge("responder_regra", END)
+    grafo.add_edge("fora_do_escopo", END)
+    grafo.add_edge("so_veiculos", END)
     grafo.add_conditional_edges("simular", depois_de_simular, ["explicar", END])
     grafo.add_edge("perguntar", END)
     grafo.add_edge("explicar", END)
