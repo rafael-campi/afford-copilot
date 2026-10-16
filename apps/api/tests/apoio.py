@@ -7,11 +7,13 @@ from agentes import ModeloIndisponivel
 from agentes.categorizacao import Categorizacao, ItemCategorizado
 from agentes.mascaramento import mascarar
 from api.config import Config
+from rag.embeddings import EmbedderDeterministico
 from seed.gerador import gerar_extrato
 from seed.personas import PERSONAS
 
 MERCADO_DE_TESTE = Path(__file__).parent / "fixtures" / "mercado"
 FOCUS_DE_TESTE = Path(__file__).parent / "fixtures" / "focus"
+RAG_DE_TESTE = Path(__file__).parent / "fixtures" / "rag"
 
 
 def config_de_teste(**mudancas: object) -> Config:
@@ -19,6 +21,8 @@ def config_de_teste(**mudancas: object) -> Config:
     base: dict[str, object] = {
         "diretorio_mercado": MERCADO_DE_TESTE,
         "diretorio_focus": FOCUS_DE_TESTE,
+        "diretorio_rag": RAG_DE_TESTE,
+        "embedder": EmbedderDeterministico(),
         "hoje": lambda: date(2026, 10, 15),
         "agora": lambda: datetime(2026, 10, 15, 12, 0, tzinfo=UTC),
         "llm": LLMIndisponivel(),

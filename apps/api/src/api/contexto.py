@@ -22,6 +22,10 @@ from api.config import Config
 from extrato.categorizacao import OUTROS, pela_regra
 from extrato.orcamento import ResumoOrcamento, TransacaoBruta, resumir_orcamento
 from mercado import ProjecoesFocus, RepositorioFocus, RepositorioSnapshots, SnapshotTaxas
+from rag.busca import BaseDeRegras
+from rag.documentos import RepositorioDocumentos
+from rag.embeddings import EmbedderFastEmbed
+from rag.indice import IndiceEmMemoria, IndicePgVector, IndiceVetorial
 from seed.gerador import gerar_extrato
 from seed.personas import PERSONAS, Persona
 from simulador import Projecoes, SnapshotMercado
@@ -73,7 +77,23 @@ class Contexto:
     _categorizados: dict[str, list[TransacaoCategorizada]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        self.banco = fabrica_de_sessoes(criar_engine(self.config.database_url))
+        self.engine = criar_engine(self.config.database_url)
+        self.banco = fabrica_de_sessoes(self.engine)
+        self._regras: BaseDeRegras | None = None
+
+    def regras(self) -> BaseDeRegras:
+        """The rules corpus, indexed on first use (pgvector on Postgres, memory otherwise)."""
+        if self._regras is None:
+            embedder = self.config.embedder or EmbedderFastEmbed()
+            indice: IndiceVetorial
+            if self.engine.dialect.name == "postgresql":
+                indice = IndicePgVector(self.engine, embedder.dimensoes)
+            else:
+                indice = IndiceEmMemoria()
+            self._regras = BaseDeRegras(
+                RepositorioDocumentos(self.config.diretorio_rag), embedder, indice
+            )
+        return self._regras
 
     def llm(self) -> LLMClient:
         if self._llm is None:

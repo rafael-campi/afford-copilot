@@ -7,6 +7,7 @@ COPY pyproject.toml uv.lock .python-version ./
 COPY apps/api apps/api
 COPY packages packages
 COPY data/mercado data/mercado
+COPY data/rag data/rag
 RUN uv sync --frozen --no-dev --package afford-api
 
 RUN useradd --create-home --uid 10001 afford

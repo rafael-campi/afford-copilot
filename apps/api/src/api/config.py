@@ -7,6 +7,7 @@ from pathlib import Path
 from argon2 import PasswordHasher
 
 from agentes import LLMClient
+from rag.embeddings import Embedder
 
 RAIZ = Path(__file__).resolve().parents[4]
 
@@ -25,6 +26,13 @@ class Config:
             os.environ.get("AFFORD_FOCUS_DIR", RAIZ / "data" / "mercado" / "focus")
         )
     )
+    diretorio_rag: Path = field(
+        default_factory=lambda: Path(
+            os.environ.get("AFFORD_RAG_DIR", RAIZ / "data" / "rag" / "documentos")
+        )
+    )
+    embedder: Embedder | None = None
+    """None loads the multilingual model on the first rule question."""
     tarifas_centavos: int = 105_000
     """Estimated tarifa de cadastro (R$ 800) plus registro de contrato (R$ 250)."""
     dias_ate_desatualizar: int = 30
