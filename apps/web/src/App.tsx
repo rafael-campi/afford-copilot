@@ -14,6 +14,7 @@ import {
 import { Comparacao } from './Comparacao'
 import { Conversa, type Mensagem } from './Conversa'
 import { EscolherPersona } from './EscolherPersona'
+import { doItem } from './format'
 import { Home } from './Home'
 import { ObjetivoForm } from './ObjetivoForm'
 
@@ -32,7 +33,7 @@ type Tela =
       conversaId: string | null
       mensagens: Mensagem[]
       objetivo: ObjetivoConversa | null
-      simulacao: Simulacao | null
+      simulacoes: Simulacao[]
       enviando: boolean
       erro: string | null
     }
@@ -84,7 +85,7 @@ export function App() {
             conversaId: null,
             mensagens: [],
             objetivo: null,
-            simulacao: null,
+            simulacoes: [],
             enviando: false,
             erro: null,
           }
@@ -93,12 +94,21 @@ export function App() {
     try {
       const conversaId = atual.conversaId ?? (await criarConversa())
       const resposta = await enviarMensagem(conversaId, texto)
+      const respostas: Mensagem[] = []
+      if (resposta.novo_objetivo && atual.objetivo?.item && resposta.objetivo.item) {
+        respostas.push({
+          autor: 'copiloto',
+          texto: `Novo objetivo: ${resposta.objetivo.item}. Os cenários ${doItem(atual.objetivo.item)} ficaram para trás.`,
+        })
+      }
+      respostas.push({ autor: 'copiloto', texto: resposta.resposta })
+      const anteriores = resposta.novo_objetivo ? [] : atual.simulacoes
       setTela({
         ...atual,
         conversaId,
-        mensagens: [...mensagens, { autor: 'copiloto', texto: resposta.resposta }],
+        mensagens: [...mensagens, ...respostas],
         objetivo: resposta.objetivo,
-        simulacao: resposta.simulacao,
+        simulacoes: resposta.simulacao ? [...anteriores, resposta.simulacao] : anteriores,
         enviando: false,
         erro: null,
       })
@@ -112,13 +122,13 @@ export function App() {
     }
   }
 
-  function compararDaConversa() {
-    if (tela.nome !== 'conversa' || tela.simulacao === null) return
-    const { objetivo } = tela.simulacao
+  function compararDaConversa(indice?: number) {
+    if (tela.nome !== 'conversa' || tela.simulacoes.length === 0) return
+    const simulacao = tela.simulacoes[indice ?? tela.simulacoes.length - 1]
     setTela({
       nome: 'comparacao',
-      pedido: { ...objetivo },
-      simulacao: tela.simulacao,
+      pedido: { ...simulacao.objetivo },
+      simulacao,
       recalculando: false,
     })
   }
@@ -153,11 +163,12 @@ export function App() {
       <Conversa
         mensagens={tela.mensagens}
         objetivo={tela.objetivo}
-        podeComparar={tela.simulacao !== null}
+        cenarios={tela.simulacoes}
         enviando={tela.enviando}
         erro={tela.erro}
         onEnviar={conversar}
-        onComparar={compararDaConversa}
+        onComparar={() => compararDaConversa()}
+        onVerCenario={(i) => compararDaConversa(i)}
         onVoltar={() => setTela({ nome: 'home' })}
       />
     )

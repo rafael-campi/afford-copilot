@@ -82,6 +82,71 @@ describe('Conversa', () => {
     expect(screen.getByText('em 5 anos')).toBeInTheDocument()
   })
 
+  it('keeps earlier scenarios to compare and opens any of them', async () => {
+    const primeira = { ...simulacao(72, 199_114, 14_708_518, false), id: 's1' }
+    const comEntrada = {
+      ...simulacao(54, 203_755, 12_002_770, false),
+      id: 's2',
+      objetivo: { ...objetivoCompleto, entrada_centavos: 1_000_000 },
+    }
+    let chamada = 0
+    fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/conversas': () => json({ id: 'c1' }, 201),
+      'POST /api/v1/conversas/c1/mensagens': () =>
+        chamada++ === 0
+          ? json({ resposta: 'Recomendo juntar.', objetivo: objetivoCompleto, faltando: [], novo_objetivo: false, simulacao: primeira })
+          : json({
+              resposta: 'Com a Entrada, recomendo juntar.',
+              objetivo: { ...objetivoCompleto, entrada_centavos: 1_000_000 },
+              faltando: [],
+              novo_objetivo: false,
+              simulacao: comEntrada,
+            }),
+    })
+
+    render(<App />)
+    await pedir('Quero um carro de 80 mil em até 5 anos')
+    await screen.findByText('Recomendo juntar.')
+    await userEvent.type(screen.getByLabelText('Mensagem'), 'E se eu der 10 mil de entrada?')
+    await userEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+
+    const cenarios = await screen.findByRole('list', { name: 'Cenários desta conversa' })
+    expect(cenarios).toHaveTextContent('Cenário 1: sem Entrada · recomendado: juntar')
+    expect(cenarios).toHaveTextContent(/Cenário 2: Entrada de R\$\s10\.000 · recomendado: juntar/)
+    await userEvent.click(screen.getByRole('button', { name: 'Ver cenário 1' }))
+    const card = await screen.findByRole('article', { name: 'Financiamento' })
+    expect(card).toHaveTextContent(/Parcela\s*R\$\s1\.991/)
+  })
+
+  it('says when a new Objetivo starts and clears the earlier scenarios', async () => {
+    let chamada = 0
+    fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/conversas': () => json({ id: 'c1' }, 201),
+      'POST /api/v1/conversas/c1/mensagens': () =>
+        chamada++ === 0
+          ? json({ resposta: 'Recomendo juntar.', objetivo: objetivoCompleto, faltando: [], novo_objetivo: false, simulacao: simulacao(72, 199_114, 14_708_518, false) })
+          : json({
+              resposta: 'Até quando você quer ter a moto?',
+              objetivo: { item: 'moto', valor_centavos: 2_000_000, prazo_meses: null, entrada_centavos: 0 },
+              faltando: ['prazo'],
+              novo_objetivo: true,
+              simulacao: null,
+            }),
+    })
+
+    render(<App />)
+    await pedir('Quero um carro de 80 mil em até 5 anos')
+    await screen.findByText('Recomendo juntar.')
+    await userEvent.type(screen.getByLabelText('Mensagem'), 'Quero uma moto de 20 mil')
+    await userEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+
+    expect(await screen.findByText('Novo objetivo: moto. Os cenários do carro ficaram para trás.')).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Cenários desta conversa' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Comparar as 3 opções' })).not.toBeInTheDocument()
+  })
+
   it('still offers the structured form', async () => {
     fakeApi({ 'GET /api/v1/home': () => json(homeBruno) })
 
