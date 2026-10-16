@@ -1,5 +1,6 @@
 import type { NovaSimulacao, Simulacao } from './api'
 import { CardConsorcio } from './CardConsorcio'
+import { CardJuntar } from './CardJuntar'
 import { Ressalvas } from './Ressalvas'
 import { formatarData, formatarPercentual, formatarReais } from './format'
 
@@ -126,6 +127,8 @@ export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onMu
         recalculando={recalculando}
         onDuracao={(d) => onMudar({ consorcio_duracao_meses: d })}
       />
+
+      <CardJuntar juntar={simulacao.juntar} item={objetivo.item} />
 
       <p className="nota">Extrato fictício. Taxas reais publicadas pelo Banco Central.</p>
     </main>

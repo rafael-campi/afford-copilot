@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal
 
 
@@ -18,6 +19,38 @@ class Orcamento:
 
 
 @dataclass(frozen=True)
+class Projecoes:
+    """Focus survey medians by calendar year, as fractions (13.25% -> 0.1325)."""
+
+    data_base: date
+    """First month of the simulation."""
+    selic_anual: dict[int, Decimal]
+    ipca_anual: dict[int, Decimal]
+    fonte_data: date
+
+    def selic(self, ano: int) -> Decimal:
+        return _do_ano(self.selic_anual, ano)
+
+    def ipca(self, ano: int) -> Decimal:
+        return _do_ano(self.ipca_anual, ano)
+
+
+def _do_ano(por_ano: dict[int, Decimal], ano: int) -> Decimal:
+    """Years past the last projection repeat the last one; earlier years use the first."""
+    anteriores = [a for a in por_ano if a <= ano]
+    return por_ano[max(anteriores)] if anteriores else por_ano[min(por_ano)]
+
+
+def _projecoes_padrao() -> Projecoes:
+    return Projecoes(
+        data_base=date(2026, 10, 1),
+        selic_anual={2026: Decimal("0.1325")},
+        ipca_anual={2026: Decimal("0.05")},
+        fonte_data=date(2026, 10, 9),
+    )
+
+
+@dataclass(frozen=True)
 class SnapshotMercado:
     id: str
     financiamento_taxa_mensal: Decimal
@@ -30,6 +63,14 @@ class SnapshotMercado:
     consorcio_duracoes_meses: tuple[int, ...] = (36, 48, 60, 72, 80)
     consorcio_sorteios_por_mes: int = 1
     consorcio_lances_por_mes: int = 1
+    projecoes: Projecoes = field(default_factory=_projecoes_padrao)
+    ir_aliquotas: tuple[Decimal, Decimal, Decimal, Decimal] = (
+        Decimal("0.225"),
+        Decimal("0.20"),
+        Decimal("0.175"),
+        Decimal("0.15"),
+    )
+    """Regressive income tax on gains: up to 180, 360, 720 days, and beyond."""
     desatualizado: bool = False
     """True when the newest data available is older than its expected refresh."""
 
@@ -87,8 +128,22 @@ class Lance:
 
 
 @dataclass(frozen=True)
+class Juntar:
+    deposito_mensal_centavos: int
+    mes_compra: int | None
+    """First month the net balance covers the projected price; None if out of reach."""
+    custo_total_centavos: int | None
+    preco_na_compra_centavos: int | None
+    entrega_ate_prazo: bool
+    rendimento_anual_percentual: Decimal
+    ipca_anual_percentual: Decimal
+    ressalvas: tuple[Ressalva, ...]
+
+
+@dataclass(frozen=True)
 class Simulacao:
     objetivo: Objetivo
     snapshot_id: str
     financiamento: Financiamento
     consorcio: Consorcio
+    juntar: Juntar

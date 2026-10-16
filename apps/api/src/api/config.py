@@ -16,6 +16,11 @@ class Config:
             os.environ.get("AFFORD_MERCADO_DIR", RAIZ / "data" / "mercado" / "snapshots")
         )
     )
+    diretorio_focus: Path = field(
+        default_factory=lambda: Path(
+            os.environ.get("AFFORD_FOCUS_DIR", RAIZ / "data" / "mercado" / "focus")
+        )
+    )
     tarifas_centavos: int = 105_000
     """Estimated tarifa de cadastro (R$ 800) plus registro de contrato (R$ 250)."""
     dias_ate_desatualizar: int = 30

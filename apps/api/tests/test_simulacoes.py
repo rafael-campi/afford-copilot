@@ -207,3 +207,32 @@ def test_rejects_a_consorcio_duracao_the_market_does_not_offer() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_simulates_saving_the_margem_segura_until_buying_in_cash() -> None:
+    juntar = sessao("bruno").post("/v1/simulacoes", json=CARRO_80_MIL).json()["juntar"]
+
+    assert juntar["deposito_mensal_centavos"] == 204_000
+    # 80,000 / 2,040 is 40 months without yield; the yield beats the 5% price rise.
+    assert 30 <= juntar["mes_compra"] < 40
+    assert juntar["entrega_ate_prazo"] is True
+    assert juntar["custo_total_centavos"] == 204_000 * juntar["mes_compra"]
+    assert juntar["rendimento_anual_percentual"] == "13.00"
+    assert juntar["ipca_anual_percentual"] == "5.00"
+    assert juntar["fonte"]["data_pesquisa"] == "2026-10-09"
+    assert [r["codigo"] for r in juntar["ressalvas"]] == [
+        "rendimento_de_referencia",
+        "preco_projetado",
+    ]
+
+
+def test_the_consorcio_carta_adjusts_by_the_projected_ipca() -> None:
+    consorcio = sessao("bruno").post("/v1/simulacoes", json=CARRO_80_MIL).json()["consorcio"]
+
+    assert consorcio["reajuste_anual_percentual"] == "5.00"
+
+
+def test_without_focus_projections_simulation_is_unavailable(tmp_path: Path) -> None:
+    http = sessao("bruno", TestClient(create_app(config_de_teste(diretorio_focus=tmp_path))))
+
+    assert http.post("/v1/simulacoes", json=CARRO_80_MIL).status_code == 503
