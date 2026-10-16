@@ -24,7 +24,7 @@ class Contexto:
     config: Config
     personas: dict[str, Persona] = field(default_factory=lambda: {p.id: p for p in PERSONAS})
     simulacoes: dict[str, tuple[str, Any]] = field(default_factory=dict)
-    conversas: dict[str, tuple[str, Any]] = field(default_factory=dict)
+    conversas: dict[str, Any] = field(default_factory=dict)
     _llm: LLMClient | None = None
 
     def llm(self) -> LLMClient:
