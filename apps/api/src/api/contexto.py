@@ -4,6 +4,8 @@ from typing import Any
 
 from fastapi import HTTPException, Request
 
+from agentes import LLMClient
+from agentes.anthropic_llm import AnthropicLLM
 from api.config import Config
 from extrato.orcamento import ResumoOrcamento, resumir_orcamento
 from mercado import ProjecoesFocus, RepositorioFocus, RepositorioSnapshots, SnapshotTaxas
@@ -22,6 +24,13 @@ class Contexto:
     config: Config
     personas: dict[str, Persona] = field(default_factory=lambda: {p.id: p for p in PERSONAS})
     simulacoes: dict[str, tuple[str, Any]] = field(default_factory=dict)
+    conversas: dict[str, tuple[str, Any]] = field(default_factory=dict)
+    _llm: LLMClient | None = None
+
+    def llm(self) -> LLMClient:
+        if self._llm is None:
+            self._llm = self.config.llm or AnthropicLLM()
+        return self._llm
 
     def persona_da_sessao(self, request: Request) -> str:
         persona_id = request.session.get("persona_id")

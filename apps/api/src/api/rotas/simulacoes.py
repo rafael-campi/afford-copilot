@@ -143,123 +143,125 @@ def _percentual(fracao: Decimal) -> Decimal:
     return (fracao * 100).quantize(Decimal("0.01"))
 
 
+def criar_simulacao(ctx: Contexto, persona_id: str, dados: NovaSimulacao) -> SimulacaoOut:
+    """Runs the simulador with the person's own budget and stores the result."""
+    taxas, focus, mercado = ctx.mercado()
+    if (
+        dados.duracao_meses is not None
+        and dados.duracao_meses not in mercado.financiamento_duracoes_meses
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Duração indisponível. Opções: {mercado.financiamento_duracoes_meses}.",
+        )
+    if (
+        dados.consorcio_duracao_meses is not None
+        and dados.consorcio_duracao_meses not in mercado.consorcio_duracoes_meses
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail=(f"Duração de grupo indisponível. Opções: {mercado.consorcio_duracoes_meses}."),
+        )
+    resumo = ctx.orcamento(persona_id)
+    objetivo = Objetivo(
+        item=dados.item,
+        valor_centavos=dados.valor_centavos,
+        prazo_meses=dados.prazo_meses,
+        entrada_centavos=dados.entrada_centavos,
+    )
+    simulacao = simular(
+        objetivo,
+        Orcamento(
+            margem_segura_centavos=resumo.margem_segura_centavos,
+            sobra_mensal_centavos=resumo.sobra_mensal_centavos,
+        ),
+        mercado,
+        duracao_meses=dados.duracao_meses,
+        consorcio_duracao_meses=dados.consorcio_duracao_meses,
+    )
+    c = simulacao.consorcio
+    j = simulacao.juntar
+    r = simulacao.recomendacao
+    f = simulacao.financiamento
+    saida = SimulacaoOut(
+        id=str(uuid.uuid4()),
+        snapshot_id=simulacao.snapshot_id,
+        objetivo=ObjetivoOut(**vars(objetivo)),
+        financiamento=FinanciamentoOut(
+            duracao_meses=f.duracao_meses,
+            parcela_centavos=f.parcela_centavos,
+            custo_total_centavos=f.custo_total_centavos,
+            juros_centavos=f.juros_centavos,
+            iof_centavos=f.iof_centavos,
+            tarifas_centavos=f.tarifas_centavos,
+            cet_mensal_percentual=f.cet_mensal_percentual,
+            cet_anual_percentual=f.cet_anual_percentual,
+            taxa_mensal=mercado.financiamento_taxa_mensal,
+            acima_da_margem=f.acima_da_margem,
+            duracoes_disponiveis=sorted(mercado.financiamento_duracoes_meses),
+            ranking=[
+                TaxaOut(
+                    instituicao=t.instituicao,
+                    taxa_mensal_percentual=t.taxa_mensal_percentual,
+                    taxa_anual_percentual=t.taxa_anual_percentual,
+                )
+                for t in sorted(taxas.taxas, key=lambda t: t.posicao)
+            ],
+            fonte=FonteOut(
+                descricao=FONTE_BCB,
+                inicio_periodo=taxas.inicio_periodo,
+                fim_periodo=taxas.fim_periodo,
+                url="https://www.bcb.gov.br/estatisticas/txjuros",
+            ),
+            ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in f.ressalvas],
+        ),
+        consorcio=ConsorcioOut(
+            carta_credito_centavos=c.carta_credito_centavos,
+            duracao_meses=c.duracao_meses,
+            parcela_centavos=c.parcela_centavos,
+            custo_total_centavos=c.custo_total_centavos,
+            taxa_administracao_centavos=c.taxa_administracao_centavos,
+            taxa_administracao_percentual=_percentual(mercado.consorcio_taxa_administracao),
+            fundo_reserva_centavos=c.fundo_reserva_centavos,
+            fundo_reserva_percentual=_percentual(mercado.consorcio_fundo_reserva),
+            reajuste_anual_percentual=_percentual(mercado.consorcio_reajuste_anual),
+            acima_da_margem=c.acima_da_margem,
+            janela=JanelaOut(**vars(c.janela)),
+            duracoes_disponiveis=sorted(mercado.consorcio_duracoes_meses),
+            ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in c.ressalvas],
+        ),
+        juntar=JuntarOut(
+            deposito_mensal_centavos=j.deposito_mensal_centavos,
+            mes_compra=j.mes_compra,
+            custo_total_centavos=j.custo_total_centavos,
+            preco_na_compra_centavos=j.preco_na_compra_centavos,
+            entrega_ate_prazo=j.entrega_ate_prazo,
+            rendimento_anual_percentual=j.rendimento_anual_percentual,
+            ipca_anual_percentual=j.ipca_anual_percentual,
+            fonte=FonteFocusOut(
+                descricao="Banco Central do Brasil: pesquisa Focus (medianas)",
+                data_pesquisa=focus.data_pesquisa,
+                url="https://www.bcb.gov.br/publicacoes/focus",
+            ),
+            ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in j.ressalvas],
+        ),
+        recomendacao=RecomendacaoOut(
+            caminho=r.caminho,
+            avaliacoes=[AvaliacaoOut(**vars(a)) for a in r.avaliacoes],
+            ressalvas=[RessalvaOut(codigo=x.codigo, texto=x.texto) for x in r.ressalvas],
+            ajustes=None if r.ajustes is None else AjustesOut(**vars(r.ajustes)),
+        ),
+    )
+    ctx.simulacoes[saida.id] = (persona_id, saida)
+    return saida
+
+
 def router(ctx: Contexto) -> APIRouter:
     rotas = APIRouter()
 
     @rotas.post("/v1/simulacoes", status_code=201)
     def criar(dados: NovaSimulacao, request: Request) -> SimulacaoOut:
-        persona_id = ctx.persona_da_sessao(request)
-        taxas, focus, mercado = ctx.mercado()
-        if (
-            dados.duracao_meses is not None
-            and dados.duracao_meses not in mercado.financiamento_duracoes_meses
-        ):
-            raise HTTPException(
-                status_code=422,
-                detail=f"Duração indisponível. Opções: {mercado.financiamento_duracoes_meses}.",
-            )
-        if (
-            dados.consorcio_duracao_meses is not None
-            and dados.consorcio_duracao_meses not in mercado.consorcio_duracoes_meses
-        ):
-            raise HTTPException(
-                status_code=422,
-                detail=(
-                    f"Duração de grupo indisponível. Opções: {mercado.consorcio_duracoes_meses}."
-                ),
-            )
-        resumo = ctx.orcamento(persona_id)
-        objetivo = Objetivo(
-            item=dados.item,
-            valor_centavos=dados.valor_centavos,
-            prazo_meses=dados.prazo_meses,
-            entrada_centavos=dados.entrada_centavos,
-        )
-        simulacao = simular(
-            objetivo,
-            Orcamento(
-                margem_segura_centavos=resumo.margem_segura_centavos,
-                sobra_mensal_centavos=resumo.sobra_mensal_centavos,
-            ),
-            mercado,
-            duracao_meses=dados.duracao_meses,
-            consorcio_duracao_meses=dados.consorcio_duracao_meses,
-        )
-        c = simulacao.consorcio
-        j = simulacao.juntar
-        r = simulacao.recomendacao
-        f = simulacao.financiamento
-        saida = SimulacaoOut(
-            id=str(uuid.uuid4()),
-            snapshot_id=simulacao.snapshot_id,
-            objetivo=ObjetivoOut(**vars(objetivo)),
-            financiamento=FinanciamentoOut(
-                duracao_meses=f.duracao_meses,
-                parcela_centavos=f.parcela_centavos,
-                custo_total_centavos=f.custo_total_centavos,
-                juros_centavos=f.juros_centavos,
-                iof_centavos=f.iof_centavos,
-                tarifas_centavos=f.tarifas_centavos,
-                cet_mensal_percentual=f.cet_mensal_percentual,
-                cet_anual_percentual=f.cet_anual_percentual,
-                taxa_mensal=mercado.financiamento_taxa_mensal,
-                acima_da_margem=f.acima_da_margem,
-                duracoes_disponiveis=sorted(mercado.financiamento_duracoes_meses),
-                ranking=[
-                    TaxaOut(
-                        instituicao=t.instituicao,
-                        taxa_mensal_percentual=t.taxa_mensal_percentual,
-                        taxa_anual_percentual=t.taxa_anual_percentual,
-                    )
-                    for t in sorted(taxas.taxas, key=lambda t: t.posicao)
-                ],
-                fonte=FonteOut(
-                    descricao=FONTE_BCB,
-                    inicio_periodo=taxas.inicio_periodo,
-                    fim_periodo=taxas.fim_periodo,
-                    url="https://www.bcb.gov.br/estatisticas/txjuros",
-                ),
-                ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in f.ressalvas],
-            ),
-            consorcio=ConsorcioOut(
-                carta_credito_centavos=c.carta_credito_centavos,
-                duracao_meses=c.duracao_meses,
-                parcela_centavos=c.parcela_centavos,
-                custo_total_centavos=c.custo_total_centavos,
-                taxa_administracao_centavos=c.taxa_administracao_centavos,
-                taxa_administracao_percentual=_percentual(mercado.consorcio_taxa_administracao),
-                fundo_reserva_centavos=c.fundo_reserva_centavos,
-                fundo_reserva_percentual=_percentual(mercado.consorcio_fundo_reserva),
-                reajuste_anual_percentual=_percentual(mercado.consorcio_reajuste_anual),
-                acima_da_margem=c.acima_da_margem,
-                janela=JanelaOut(**vars(c.janela)),
-                duracoes_disponiveis=sorted(mercado.consorcio_duracoes_meses),
-                ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in c.ressalvas],
-            ),
-            juntar=JuntarOut(
-                deposito_mensal_centavos=j.deposito_mensal_centavos,
-                mes_compra=j.mes_compra,
-                custo_total_centavos=j.custo_total_centavos,
-                preco_na_compra_centavos=j.preco_na_compra_centavos,
-                entrega_ate_prazo=j.entrega_ate_prazo,
-                rendimento_anual_percentual=j.rendimento_anual_percentual,
-                ipca_anual_percentual=j.ipca_anual_percentual,
-                fonte=FonteFocusOut(
-                    descricao="Banco Central do Brasil: pesquisa Focus (medianas)",
-                    data_pesquisa=focus.data_pesquisa,
-                    url="https://www.bcb.gov.br/publicacoes/focus",
-                ),
-                ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in j.ressalvas],
-            ),
-            recomendacao=RecomendacaoOut(
-                caminho=r.caminho,
-                avaliacoes=[AvaliacaoOut(**vars(a)) for a in r.avaliacoes],
-                ressalvas=[RessalvaOut(codigo=x.codigo, texto=x.texto) for x in r.ressalvas],
-                ajustes=None if r.ajustes is None else AjustesOut(**vars(r.ajustes)),
-            ),
-        )
-        ctx.simulacoes[saida.id] = (persona_id, saida)
-        return saida
+        return criar_simulacao(ctx, ctx.persona_da_sessao(request), dados)
 
     @rotas.get("/v1/simulacoes/{simulacao_id}")
     def ler(simulacao_id: str, request: Request) -> SimulacaoOut:

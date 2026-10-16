@@ -162,3 +162,33 @@ export async function criarSimulacao(dados: NovaSimulacao): Promise<Simulacao> {
   if (!response.ok) throw new Error(`POST /v1/simulacoes failed with ${response.status}`)
   return (await response.json()) as Simulacao
 }
+
+export type ObjetivoConversa = {
+  item: string | null
+  valor_centavos: number | null
+  prazo_meses: number | null
+  entrada_centavos: number
+}
+
+export type RespostaCopiloto = {
+  resposta: string
+  objetivo: ObjetivoConversa
+  faltando: string[]
+  simulacao: Simulacao | null
+}
+
+export async function criarConversa(): Promise<string> {
+  const response = await fetch('/api/v1/conversas', { method: 'POST' })
+  if (!response.ok) throw new Error(`POST /v1/conversas failed with ${response.status}`)
+  return ((await response.json()) as { id: string }).id
+}
+
+export async function enviarMensagem(conversaId: string, texto: string): Promise<RespostaCopiloto> {
+  const response = await fetch(`/api/v1/conversas/${conversaId}/mensagens`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ texto }),
+  })
+  if (!response.ok) throw new Error(`POST mensagens failed with ${response.status}`)
+  return (await response.json()) as RespostaCopiloto
+}

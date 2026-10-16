@@ -7,7 +7,13 @@ export type EstadoHome =
   | { tipo: 'erro' }
   | { tipo: 'pronto'; dados: HomeData }
 
-export function Home({ estado, onAnalisar }: { estado: EstadoHome; onAnalisar: () => void }) {
+type Props = {
+  estado: EstadoHome
+  onEnviar: (texto: string) => void
+  onFormulario: () => void
+}
+
+export function Home({ estado, onEnviar, onFormulario }: Props) {
   const [pedido, setPedido] = useState('')
   const [hora] = useState(() => new Date().getHours())
 
@@ -38,7 +44,7 @@ export function Home({ estado, onAnalisar }: { estado: EstadoHome; onAnalisar: (
         className="objetivo"
         onSubmit={(event) => {
           event.preventDefault()
-          onAnalisar()
+          if (pedido.trim()) onEnviar(pedido.trim())
         }}
       >
         <label htmlFor="pedido" className="objetivo-label">
@@ -61,6 +67,9 @@ export function Home({ estado, onAnalisar }: { estado: EstadoHome; onAnalisar: (
         </div>
         <button type="submit" className="primary-button">
           Analisar minhas opções
+        </button>
+        <button type="button" className="link-button" onClick={onFormulario}>
+          Prefiro preencher os campos
         </button>
       </form>
 
