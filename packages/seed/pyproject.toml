@@ -3,7 +3,10 @@ name = "afford-seed"
 version = "0.1.0"
 description = "Seeded generator of synthetic Personas and their Extratos."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["afford-extrato"]
+
+[tool.uv.sources]
+afford-extrato = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.12.22,<0.13.0"]
