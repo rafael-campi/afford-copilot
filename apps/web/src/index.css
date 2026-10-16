@@ -624,3 +624,75 @@ input {
   gap: 4px;
   font-weight: 600;
 }
+
+.link-button {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.mensagens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mensagem {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 15px;
+}
+
+.mensagem-pessoa {
+  align-self: flex-end;
+  background: var(--primary);
+  color: var(--on-primary);
+  border-bottom-right-radius: 4px;
+}
+
+.mensagem-copiloto {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+}
+
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.conversa-campo {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.conversa-campo input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 0 14px;
+}
+
+.enviar {
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 600;
+  padding: 0 16px;
+  cursor: pointer;
+}

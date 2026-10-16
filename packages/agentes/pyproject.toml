@@ -3,7 +3,7 @@ name = "afford-agentes"
 version = "0.1.0"
 description = "LangGraph orchestrator, tools and the LLMClient port."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["anthropic>=1.0", "langgraph>=0.2", "pydantic>=2.9"]
 
 [build-system]
 requires = ["uv_build>=0.12.22,<0.13.0"]

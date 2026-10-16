@@ -4,7 +4,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from api.config import Config
 from api.contexto import Contexto
-from api.rotas import orcamento, sessao, simulacoes
+from api.rotas import conversas, orcamento, sessao, simulacoes
 
 
 class Health(BaseModel):
@@ -28,6 +28,7 @@ def create_app(config: Config | None = None) -> FastAPI:
     app.include_router(sessao.router(ctx))
     app.include_router(orcamento.router(ctx))
     app.include_router(simulacoes.router(ctx))
+    app.include_router(conversas.router(ctx))
     return app
 
 

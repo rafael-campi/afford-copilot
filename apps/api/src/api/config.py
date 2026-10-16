@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
+from agentes import LLMClient
+
 RAIZ = Path(__file__).resolve().parents[4]
 
 
@@ -26,6 +28,8 @@ class Config:
     dias_ate_desatualizar: int = 30
     """BCB publishes each weekly period with a lag; past this many days it is stale."""
     hoje: Callable[[], date] = date.today
+    llm: LLMClient | None = None
+    """None builds the Claude adapter on first use."""
     session_secret: str = field(
         default_factory=lambda: os.environ.get("AFFORD_SESSION_SECRET", "dev-only-secret")
     )
