@@ -323,3 +323,6 @@ export async function importarExtrato(
     body: corpo,
   })
 }
+
+export const pedirExclusao = () =>
+  pedirJson<ConfirmacaoPendente>('/api/v1/conta/exclusao', { method: 'POST' })

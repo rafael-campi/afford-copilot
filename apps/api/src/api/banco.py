@@ -35,7 +35,9 @@ class EventoAuditoria(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     """Insertion order: the log reads in the order things happened."""
-    conta_id: Mapped[str] = mapped_column(ForeignKey("contas.id"), index=True)
+    conta_id: Mapped[str] = mapped_column(String(36), index=True)
+    """Not a foreign key: the log outlives a deleted account, pointing at an id that no
+    longer resolves to anyone."""
     tipo: Mapped[str] = mapped_column(String(80))
     detalhe: Mapped[dict[str, Any] | None] = mapped_column(JSON, default=None)
     """Never personal data: identifiers and outcomes only."""

@@ -129,6 +129,7 @@ class Contexto:
                         )
                     )
                     db.delete(importacao)
+                    self._categorizados.pop(f"importacao:{conta_id}:{importacao.id}", None)
                     apagou = True
                 else:
                     vigentes.append(importacao)
@@ -158,7 +159,7 @@ class Contexto:
             if auditar:
                 self.auditar(conta_id, "importacao_usada", {"importacao_id": importacao.id})
             return Fonte(
-                chave=f"importacao:{importacao.id}",
+                chave=f"importacao:{conta_id}:{importacao.id}",
                 transacoes=tuple(
                     TransacaoBruta(
                         data=t.data, descricao=t.descricao, valor_centavos=t.valor_centavos
@@ -263,3 +264,15 @@ class Contexto:
         if guardar:
             self._categorizados[fonte.chave] = categorizados
         return categorizados
+
+    def esquecer_conta(self, conta_id: str) -> None:
+        """Drops what is kept in memory for the account: Simulações, conversations and the
+        categorization of its imported Extratos."""
+        for chave in [c for c in self._categorizados if c.startswith(f"importacao:{conta_id}:")]:
+            del self._categorizados[chave]
+        for id_, (dono, _) in list(self.simulacoes.items()):
+            if dono == conta_id:
+                del self.simulacoes[id_]
+        for id_, conversa in list(self.conversas.items()):
+            if getattr(conversa, "conta_id", None) == conta_id:
+                del self.conversas[id_]

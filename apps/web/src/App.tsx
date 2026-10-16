@@ -12,6 +12,7 @@ import {
   type ObjetivoConversa,
   type Simulacao,
 } from './api'
+import { ApagarConta } from './ApagarConta'
 import { Comparacao } from './Comparacao'
 import { Conversa, type Mensagem } from './Conversa'
 import { Entrar } from './Entrar'
@@ -31,6 +32,7 @@ type Estado =
 type Tela =
   | { nome: 'home' }
   | { nome: 'consentimentos' }
+  | { nome: 'apagar-conta' }
   | { nome: 'objetivo'; erro: string | null; enviando: boolean }
   | { nome: 'comparacao'; pedido: NovaSimulacao; simulacao: Simulacao; recalculando: boolean }
   | {
@@ -171,6 +173,9 @@ export function App() {
   if (estado.tipo === 'sem-sessao') {
     return <Entrar onEscolherPersona={escolher} onEntrou={recarregar} />
   }
+  if (tela.nome === 'apagar-conta') {
+    return <ApagarConta onVoltar={recarregar} onApagada={recarregar} />
+  }
   if (tela.nome === 'consentimentos') {
     return <Consentimentos onVoltar={recarregar} onMudou={recarregar} />
   }
@@ -226,6 +231,7 @@ export function App() {
       onFormulario={() => setTela({ nome: 'objetivo', erro: null, enviando: false })}
       onSair={sair}
       onConsentimentos={() => setTela({ nome: 'consentimentos' })}
+      onApagarConta={() => setTela({ nome: 'apagar-conta' })}
     />
   )
 }

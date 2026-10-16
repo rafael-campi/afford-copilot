@@ -74,6 +74,9 @@ def router(ctx: Contexto) -> APIRouter:
             evento = executar(db, conta.id, confirmacao.dados, agora)
             acao = confirmacao.acao
         ctx.auditar(conta.id, evento)
+        if acao == "apagar_conta":
+            ctx.esquecer_conta(conta.id)
+            request.session.clear()
         return ResultadoConfirmacao(acao=acao, feito=True)
 
     return rotas

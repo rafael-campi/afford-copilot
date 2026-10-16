@@ -13,9 +13,11 @@ type Props = {
   onFormulario: () => void
   onSair: () => void
   onConsentimentos: () => void
+  onApagarConta: () => void
 }
 
-export function Home({ estado, onEnviar, onFormulario, onSair, onConsentimentos }: Props) {
+export function Home(props: Props) {
+  const { estado, onEnviar, onFormulario, onSair, onConsentimentos, onApagarConta } = props
   const [pedido, setPedido] = useState('')
   const [menu, setMenu] = useState(false)
   const [hora] = useState(() => new Date().getHours())
@@ -47,6 +49,9 @@ export function Home({ estado, onEnviar, onFormulario, onSair, onConsentimentos 
             <div className="perfil-menu">
               <button type="button" className="link-button" onClick={onConsentimentos}>
                 Meus consentimentos
+              </button>
+              <button type="button" className="link-button" onClick={onApagarConta}>
+                Apagar minha conta
               </button>
               <button type="button" className="link-button" onClick={onSair}>
                 Sair
