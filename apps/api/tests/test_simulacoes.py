@@ -239,9 +239,7 @@ def test_without_focus_projections_simulation_is_unavailable(tmp_path: Path) -> 
 
 
 def test_every_simulacao_carries_a_recomendacao_with_reasons() -> None:
-    recomendacao = sessao("bruno").post("/v1/simulacoes", json=CARRO_80_MIL).json()[
-        "recomendacao"
-    ]
+    recomendacao = sessao("bruno").post("/v1/simulacoes", json=CARRO_80_MIL).json()["recomendacao"]
 
     assert recomendacao["caminho"] == "juntar"
     assert {a["caminho"]: a["motivo_codigo"] for a in recomendacao["avaliacoes"]} == {
