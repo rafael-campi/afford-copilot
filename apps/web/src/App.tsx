@@ -6,10 +6,15 @@ import {
   entrarComo,
   fetchHome,
   logout,
+  fetchPlano,
+  previaPlano,
+  salvarPlano,
   ObjetivoInvalido,
   type HomeData,
   type NovaSimulacao,
   type ObjetivoConversa,
+  type PlanoInfo,
+  type Caminho,
   type Simulacao,
 } from './api'
 import { ApagarConta } from './ApagarConta'
@@ -18,6 +23,8 @@ import { Conversa, type Mensagem } from './Conversa'
 import { Entrar } from './Entrar'
 import { doItem } from './format'
 import { Home } from './Home'
+import { MeusPlanos } from './MeusPlanos'
+import { RevisaoPlano } from './RevisaoPlano'
 import { ObjetivoForm } from './ObjetivoForm'
 import { Conectar } from './Conectar'
 import { Consentimentos } from './Consentimentos'
@@ -33,6 +40,8 @@ type Tela =
   | { nome: 'home' }
   | { nome: 'consentimentos' }
   | { nome: 'apagar-conta' }
+  | { nome: 'planos' }
+  | { nome: 'plano'; plano: PlanoInfo; modo: 'revisao' | 'salvo' | 'leitura'; simulacaoId?: string; salvando?: boolean; voltar: Tela }
   | { nome: 'objetivo'; erro: string | null; enviando: boolean }
   | { nome: 'comparacao'; pedido: NovaSimulacao; simulacao: Simulacao; recalculando: boolean }
   | {
@@ -158,6 +167,24 @@ export function App() {
     })
   }
 
+  async function escolherCaminho(caminho: Caminho) {
+    if (tela.nome !== 'comparacao') return
+    const plano = await previaPlano(tela.simulacao.id, caminho)
+    setTela({ nome: 'plano', plano, modo: 'revisao', simulacaoId: tela.simulacao.id, voltar: tela })
+  }
+
+  async function salvar() {
+    if (tela.nome !== 'plano' || !tela.simulacaoId) return
+    setTela({ ...tela, salvando: true })
+    const plano = await salvarPlano(tela.simulacaoId, tela.plano.caminho)
+    setTela({ nome: 'plano', plano, modo: 'salvo', voltar: { nome: 'home' } })
+  }
+
+  async function abrirPlano(id: string) {
+    const plano = await fetchPlano(id)
+    setTela({ nome: 'plano', plano, modo: 'leitura', voltar: { nome: 'planos' } })
+  }
+
   async function mudarPedido(mudanca: Partial<NovaSimulacao>) {
     if (tela.nome !== 'comparacao') return
     const pedido = { ...tela.pedido, ...mudanca }
@@ -172,6 +199,20 @@ export function App() {
 
   if (estado.tipo === 'sem-sessao') {
     return <Entrar onEscolherPersona={escolher} onEntrou={recarregar} />
+  }
+  if (tela.nome === 'plano') {
+    return (
+      <RevisaoPlano
+        plano={tela.plano}
+        modo={tela.modo}
+        salvando={tela.salvando}
+        onSalvar={salvar}
+        onVoltar={() => setTela(tela.voltar)}
+      />
+    )
+  }
+  if (tela.nome === 'planos') {
+    return <MeusPlanos onAbrir={abrirPlano} onVoltar={() => setTela({ nome: 'home' })} />
   }
   if (tela.nome === 'apagar-conta') {
     return <ApagarConta onVoltar={recarregar} onApagada={recarregar} />
@@ -219,6 +260,7 @@ export function App() {
         margemSeguraCentavos={estado.dados.resumo.margem_segura_centavos}
         recalculando={tela.recalculando}
         onMudar={mudarPedido}
+        onEscolher={escolherCaminho}
         onVoltar={() => setTela({ nome: 'objetivo', erro: null, enviando: false })}
       />
     )
@@ -232,6 +274,7 @@ export function App() {
       onSair={sair}
       onConsentimentos={() => setTela({ nome: 'consentimentos' })}
       onApagarConta={() => setTela({ nome: 'apagar-conta' })}
+      onPlanos={() => setTela({ nome: 'planos' })}
     />
   )
 }

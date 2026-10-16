@@ -74,3 +74,11 @@ def fragmentar(documento: Documento) -> list[Trecho]:
                 )
             )
     return trechos
+
+
+def trecho_por_rotulo(documento: Documento, rotulo: str) -> Trecho | None:
+    """The passage of an article (its first part when the article was split)."""
+    return next(
+        (t for t in fragmentar(documento) if t.rotulo.split(" (")[0] == rotulo),
+        None,
+    )

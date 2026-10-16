@@ -336,3 +336,32 @@ export async function importarExtrato(
 
 export const pedirExclusao = () =>
   pedirJson<ConfirmacaoPendente>('/api/v1/conta/exclusao', { method: 'POST' })
+
+export type PlanoInfo = {
+  id: string
+  caminho: Caminho
+  criado_em: string
+  resumo: {
+    item: string
+    valor_centavos: number
+    parcela_centavos: number
+    duracao_meses: number | null
+    custo_total_centavos: number | null
+    item_em_maos: string
+  }
+  ressalvas: Ressalva[]
+  explicacao: { texto: string; fontes: { documento: string; rotulo: string; url: string }[] }
+  snapshot_id: string
+  aviso: string
+}
+
+export type PlanoResumido = { id: string; caminho: Caminho; item: string; criado_em: string }
+
+export const previaPlano = (simulacaoId: string, caminho: Caminho) =>
+  pedirJson<PlanoInfo>('/api/v1/planos/previa', postJson({ simulacao_id: simulacaoId, caminho }))
+
+export const salvarPlano = (simulacaoId: string, caminho: Caminho) =>
+  pedirJson<PlanoInfo>('/api/v1/planos', postJson({ simulacao_id: simulacaoId, caminho }))
+
+export const fetchPlanos = () => pedirJson<PlanoResumido[]>('/api/v1/planos')
+export const fetchPlano = (id: string) => pedirJson<PlanoInfo>(`/api/v1/planos/${id}`)

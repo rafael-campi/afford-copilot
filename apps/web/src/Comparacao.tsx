@@ -11,10 +11,12 @@ type Props = {
   margemSeguraCentavos: number
   recalculando: boolean
   onMudar: (mudanca: Partial<NovaSimulacao>) => void
+  onEscolher: (caminho: Caminho) => void
   onVoltar: () => void
 }
 
-export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onMudar, onVoltar }: Props) {
+export function Comparacao(props: Props) {
+  const { simulacao, margemSeguraCentavos, recalculando, onMudar, onEscolher, onVoltar } = props
   const { objetivo, financiamento: f, recomendacao } = simulacao
   const item = objetivo.item.charAt(0).toUpperCase() + objetivo.item.slice(1)
   const destaque = (caminho: Caminho): Destaque => ({
@@ -43,6 +45,7 @@ export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onMu
         financiamento={f}
         recalculando={recalculando}
         destaque={destaque('financiamento')}
+        onEscolher={() => onEscolher('financiamento')}
         onDuracao={(d) => onMudar({ duracao_meses: d })}
       />
 
@@ -50,10 +53,16 @@ export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onMu
         consorcio={simulacao.consorcio}
         recalculando={recalculando}
         destaque={destaque('consorcio')}
+        onEscolher={() => onEscolher('consorcio')}
         onDuracao={(d) => onMudar({ consorcio_duracao_meses: d })}
       />
 
-      <CardJuntar juntar={simulacao.juntar} item={objetivo.item} destaque={destaque('juntar')} />
+      <CardJuntar
+        juntar={simulacao.juntar}
+        item={objetivo.item}
+        destaque={destaque('juntar')}
+        onEscolher={() => onEscolher('juntar')}
+      />
 
       <p className="nota">Extrato fictício. Taxas reais publicadas pelo Banco Central.</p>
     </main>

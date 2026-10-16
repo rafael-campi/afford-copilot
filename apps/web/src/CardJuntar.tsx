@@ -3,9 +3,9 @@ import { formatarData, formatarPercentual, formatarReais } from './format'
 import { PorQueNao, SeloDestaque, type Destaque } from './Destaque'
 import { Ressalvas } from './Ressalvas'
 
-type Props = { juntar: Juntar; item: string; destaque: Destaque }
+type Props = { juntar: Juntar; item: string; destaque: Destaque; onEscolher: () => void }
 
-export function CardJuntar({ juntar: j, item, destaque }: Props) {
+export function CardJuntar({ juntar: j, item, destaque, onEscolher }: Props) {
   return (
     <article
       className={destaque.recomendado ? 'caminho caminho-recomendado' : 'caminho'}
@@ -52,6 +52,9 @@ export function CardJuntar({ juntar: j, item, destaque }: Props) {
           Ver no site do BCB
         </a>
       </p>
+      <button type="button" className="escolher secondary-button" onClick={onEscolher}>
+        Escolher este caminho
+      </button>
     </article>
   )
 }

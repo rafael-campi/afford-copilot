@@ -111,3 +111,15 @@ class TransacaoImportada(Base):
     data: Mapped[date] = mapped_column(Date)
     descricao: Mapped[str] = mapped_column(String(255))
     valor_centavos: Mapped[int] = mapped_column(Integer)
+
+
+class Plano(Base):
+    """The Caminho the person chose, frozen with the numbers and sources it was shown."""
+
+    __tablename__ = "planos"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    conta_id: Mapped[str] = mapped_column(ForeignKey("contas.id"), index=True)
+    caminho: Mapped[str] = mapped_column(String(20))
+    dados: Mapped[dict[str, Any]] = mapped_column(JSON)
+    criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True))
