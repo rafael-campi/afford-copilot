@@ -89,12 +89,31 @@ class ConsorcioOut(BaseModel):
     ressalvas: list[RessalvaOut]
 
 
+class FonteFocusOut(BaseModel):
+    descricao: str
+    data_pesquisa: date
+    url: str
+
+
+class JuntarOut(BaseModel):
+    deposito_mensal_centavos: int
+    mes_compra: int | None
+    custo_total_centavos: int | None
+    preco_na_compra_centavos: int | None
+    entrega_ate_prazo: bool
+    rendimento_anual_percentual: Decimal
+    ipca_anual_percentual: Decimal
+    fonte: FonteFocusOut
+    ressalvas: list[RessalvaOut]
+
+
 class SimulacaoOut(BaseModel):
     id: str
     snapshot_id: str
     objetivo: ObjetivoOut
     financiamento: FinanciamentoOut
     consorcio: ConsorcioOut
+    juntar: JuntarOut
 
 
 FONTE_BCB = "Banco Central do Brasil: taxas médias de aquisição de veículos (pessoa física)"
@@ -110,7 +129,7 @@ def router(ctx: Contexto) -> APIRouter:
     @rotas.post("/v1/simulacoes", status_code=201)
     def criar(dados: NovaSimulacao, request: Request) -> SimulacaoOut:
         persona_id = ctx.persona_da_sessao(request)
-        taxas, mercado = ctx.mercado()
+        taxas, focus, mercado = ctx.mercado()
         if (
             dados.duracao_meses is not None
             and dados.duracao_meses not in mercado.financiamento_duracoes_meses
@@ -147,6 +166,7 @@ def router(ctx: Contexto) -> APIRouter:
             consorcio_duracao_meses=dados.consorcio_duracao_meses,
         )
         c = simulacao.consorcio
+        j = simulacao.juntar
         f = simulacao.financiamento
         saida = SimulacaoOut(
             id=str(uuid.uuid4()),
@@ -194,6 +214,21 @@ def router(ctx: Contexto) -> APIRouter:
                 janela=JanelaOut(**vars(c.janela)),
                 duracoes_disponiveis=sorted(mercado.consorcio_duracoes_meses),
                 ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in c.ressalvas],
+            ),
+            juntar=JuntarOut(
+                deposito_mensal_centavos=j.deposito_mensal_centavos,
+                mes_compra=j.mes_compra,
+                custo_total_centavos=j.custo_total_centavos,
+                preco_na_compra_centavos=j.preco_na_compra_centavos,
+                entrega_ate_prazo=j.entrega_ate_prazo,
+                rendimento_anual_percentual=j.rendimento_anual_percentual,
+                ipca_anual_percentual=j.ipca_anual_percentual,
+                fonte=FonteFocusOut(
+                    descricao="Banco Central do Brasil: pesquisa Focus (medianas)",
+                    data_pesquisa=focus.data_pesquisa,
+                    url="https://www.bcb.gov.br/publicacoes/focus",
+                ),
+                ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in j.ressalvas],
             ),
         )
         ctx.simulacoes[saida.id] = (persona_id, saida)

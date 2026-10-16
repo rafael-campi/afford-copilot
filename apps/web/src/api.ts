@@ -115,12 +115,25 @@ export type Consorcio = {
   ressalvas: Ressalva[]
 }
 
+export type Juntar = {
+  deposito_mensal_centavos: number
+  mes_compra: number | null
+  custo_total_centavos: number | null
+  preco_na_compra_centavos: number | null
+  entrega_ate_prazo: boolean
+  rendimento_anual_percentual: string
+  ipca_anual_percentual: string
+  fonte: { descricao: string; data_pesquisa: string; url: string }
+  ressalvas: Ressalva[]
+}
+
 export type Simulacao = {
   id: string
   snapshot_id: string
   objetivo: Omit<NovaSimulacao, 'duracao_meses' | 'consorcio_duracao_meses'>
   financiamento: Financiamento
   consorcio: Consorcio
+  juntar: Juntar
 }
 
 export class ObjetivoInvalido extends Error {}
