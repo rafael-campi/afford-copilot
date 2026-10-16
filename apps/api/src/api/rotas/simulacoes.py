@@ -107,6 +107,25 @@ class JuntarOut(BaseModel):
     ressalvas: list[RessalvaOut]
 
 
+class AvaliacaoOut(BaseModel):
+    caminho: str
+    motivo_codigo: str | None
+    motivo_texto: str | None
+
+
+class AjustesOut(BaseModel):
+    entrada_minima_centavos: int | None
+    prazo_minimo_meses: int | None
+    valor_maximo_centavos: int | None
+
+
+class RecomendacaoOut(BaseModel):
+    caminho: str | None
+    avaliacoes: list[AvaliacaoOut]
+    ressalvas: list[RessalvaOut]
+    ajustes: AjustesOut | None
+
+
 class SimulacaoOut(BaseModel):
     id: str
     snapshot_id: str
@@ -114,6 +133,7 @@ class SimulacaoOut(BaseModel):
     financiamento: FinanciamentoOut
     consorcio: ConsorcioOut
     juntar: JuntarOut
+    recomendacao: RecomendacaoOut
 
 
 FONTE_BCB = "Banco Central do Brasil: taxas médias de aquisição de veículos (pessoa física)"
@@ -167,6 +187,7 @@ def router(ctx: Contexto) -> APIRouter:
         )
         c = simulacao.consorcio
         j = simulacao.juntar
+        r = simulacao.recomendacao
         f = simulacao.financiamento
         saida = SimulacaoOut(
             id=str(uuid.uuid4()),
@@ -229,6 +250,12 @@ def router(ctx: Contexto) -> APIRouter:
                     url="https://www.bcb.gov.br/publicacoes/focus",
                 ),
                 ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in j.ressalvas],
+            ),
+            recomendacao=RecomendacaoOut(
+                caminho=r.caminho,
+                avaliacoes=[AvaliacaoOut(**vars(a)) for a in r.avaliacoes],
+                ressalvas=[RessalvaOut(codigo=x.codigo, texto=x.texto) for x in r.ressalvas],
+                ajustes=None if r.ajustes is None else AjustesOut(**vars(r.ajustes)),
             ),
         )
         ctx.simulacoes[saida.id] = (persona_id, saida)

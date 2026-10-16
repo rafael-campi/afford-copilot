@@ -573,3 +573,54 @@ input {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+
+.caminho-recomendado {
+  border: 2px solid var(--primary);
+}
+
+.selo-ok {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.caminho-topo .selo + .selo {
+  margin-left: auto;
+}
+
+.por-que-nao {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink);
+  border-left: 3px solid var(--line);
+  padding-left: 10px;
+}
+
+.ressalva p {
+  margin: 0;
+}
+
+.painel-sem-caminho {
+  background: var(--surface);
+  border: 2px solid var(--warn);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.painel-titulo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.ajustes {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+}

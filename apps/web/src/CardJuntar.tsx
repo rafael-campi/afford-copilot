@@ -1,14 +1,21 @@
 import type { Juntar } from './api'
 import { formatarData, formatarPercentual, formatarReais } from './format'
+import { PorQueNao, SeloDestaque, type Destaque } from './Destaque'
 import { Ressalvas } from './Ressalvas'
 
-export function CardJuntar({ juntar: j, item }: { juntar: Juntar; item: string }) {
+type Props = { juntar: Juntar; item: string; destaque: Destaque }
+
+export function CardJuntar({ juntar: j, item, destaque }: Props) {
   return (
-    <article className="caminho" aria-labelledby="caminho-juntar">
+    <article
+      className={destaque.recomendado ? 'caminho caminho-recomendado' : 'caminho'}
+      aria-labelledby="caminho-juntar"
+    >
       <div className="caminho-topo">
         <h2 id="caminho-juntar" className="caminho-titulo">
           Juntar e comprar à vista
         </h2>
+        <SeloDestaque destaque={destaque} />
         {!j.entrega_ate_prazo && <span className="selo selo-alerta">Depois do Prazo</span>}
       </div>
       <dl className="caminho-numeros">
@@ -37,6 +44,7 @@ export function CardJuntar({ juntar: j, item }: { juntar: Juntar; item: string }
         {formatarPercentual(j.rendimento_anual_percentual)} ao ano e IPCA de{' '}
         {formatarPercentual(j.ipca_anual_percentual)} no preço.
       </p>
+      <PorQueNao destaque={destaque} />
       <Ressalvas ressalvas={j.ressalvas} />
       <p className="nota">
         Fonte: pesquisa Focus do Banco Central de {formatarData(j.fonte.data_pesquisa)}.{' '}

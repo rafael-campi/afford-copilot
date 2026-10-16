@@ -2,6 +2,8 @@
 
 from simulador.consorcio import aplicar_lance
 from simulador.modelo import (
+    Ajustes,
+    Avaliacao,
     Consorcio,
     Financiamento,
     JanelaContemplacao,
@@ -10,6 +12,7 @@ from simulador.modelo import (
     Objetivo,
     Orcamento,
     Projecoes,
+    Recomendacao,
     Ressalva,
     Simulacao,
     SnapshotMercado,
@@ -17,6 +20,8 @@ from simulador.modelo import (
 from simulador.simular import simular
 
 __all__ = [
+    "Ajustes",
+    "Avaliacao",
     "Consorcio",
     "Financiamento",
     "JanelaContemplacao",
@@ -25,6 +30,7 @@ __all__ = [
     "Objetivo",
     "Orcamento",
     "Projecoes",
+    "Recomendacao",
     "Ressalva",
     "Simulacao",
     "SnapshotMercado",

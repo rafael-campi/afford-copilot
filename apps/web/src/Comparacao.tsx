@@ -1,8 +1,10 @@
-import type { NovaSimulacao, Simulacao } from './api'
+import type { Caminho, NovaSimulacao, Simulacao } from './api'
+import { CardFinanciamento } from './CardFinanciamento'
+import type { Destaque } from './Destaque'
+import { PainelRecomendacao } from './PainelRecomendacao'
 import { CardConsorcio } from './CardConsorcio'
 import { CardJuntar } from './CardJuntar'
-import { Ressalvas } from './Ressalvas'
-import { formatarData, formatarPercentual, formatarReais } from './format'
+import { formatarReais } from './format'
 
 type Props = {
   simulacao: Simulacao
@@ -13,8 +15,12 @@ type Props = {
 }
 
 export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onMudar, onVoltar }: Props) {
-  const { objetivo, financiamento: f } = simulacao
+  const { objetivo, financiamento: f, recomendacao } = simulacao
   const item = objetivo.item.charAt(0).toUpperCase() + objetivo.item.slice(1)
+  const destaque = (caminho: Caminho): Destaque => ({
+    recomendado: recomendacao.caminho === caminho,
+    porQueNao: recomendacao.avaliacoes.find((a) => a.caminho === caminho)?.motivo_texto ?? null,
+  })
 
   return (
     <main className="tela">
@@ -31,104 +37,23 @@ export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onMu
         </p>
       </header>
 
-      <article className="caminho" aria-labelledby="caminho-financiamento" aria-busy={recalculando}>
-        <div className="caminho-topo">
-          <h2 id="caminho-financiamento" className="caminho-titulo">
-            Financiamento
-          </h2>
-          {f.acima_da_margem && <span className="selo selo-alerta">Acima da margem</span>}
-        </div>
-        <dl className="caminho-numeros">
-          <div>
-            <dt>Parcela</dt>
-            <dd>{formatarReais(f.parcela_centavos)}</dd>
-          </div>
-          <div>
-            <dt>Custo total</dt>
-            <dd>{formatarReais(f.custo_total_centavos)}</dd>
-          </div>
-          <div>
-            <dt>Item em mãos</dt>
-            <dd>Imediato</dd>
-          </div>
-        </dl>
-        <label className="caminho-duracao">
-          <span>Duração</span>
-          <select
-            value={String(f.duracao_meses)}
-            onChange={(e) => onMudar({ duracao_meses: Number(e.target.value) })}
-            disabled={recalculando}
-          >
-            {f.duracoes_disponiveis.map((d) => (
-              <option key={d} value={String(d)}>
-                {d} meses
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="caminho-texto">
-          Você pagaria cerca de {formatarReais(f.juros_centavos)} só de juros, com a taxa mediana
-          do mercado de {formatarPercentual(String(Number(f.taxa_mensal) * 100))} ao mês.
-        </p>
-        <div className="cet">
-          <p className="cet-titulo">
-            CET estimado: {formatarPercentual(f.cet_anual_percentual)} ao ano (
-            {formatarPercentual(f.cet_mensal_percentual)} ao mês)
-          </p>
-          <table className="cet-partes">
-            <caption>Quanto você paga além do valor financiado</caption>
-            <tbody>
-              <tr>
-                <th scope="row">Juros</th>
-                <td>{formatarReais(f.juros_centavos)}</td>
-              </tr>
-              <tr>
-                <th scope="row">IOF</th>
-                <td>{formatarReais(f.iof_centavos)}</td>
-              </tr>
-              <tr>
-                <th scope="row">Tarifas</th>
-                <td>{formatarReais(f.tarifas_centavos)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <Ressalvas ressalvas={f.ressalvas} />
-        <details className="ranking">
-          <summary>Ver taxas de {f.ranking.length} instituições</summary>
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Instituição</th>
-                <th scope="col">Taxa ao mês</th>
-              </tr>
-            </thead>
-            <tbody>
-              {f.ranking.map((t) => (
-                <tr key={t.instituicao}>
-                  <td>{t.instituicao}</td>
-                  <td>{formatarPercentual(t.taxa_mensal_percentual)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
-        <p className="nota">
-          Fonte: Banco Central do Brasil, {formatarData(f.fonte.inicio_periodo)} a{' '}
-          {formatarData(f.fonte.fim_periodo)}.{' '}
-          <a href={f.fonte.url} target="_blank" rel="noreferrer">
-            Ver no site do BCB
-          </a>
-        </p>
-      </article>
+      <PainelRecomendacao recomendacao={recomendacao} item={objetivo.item} />
+
+      <CardFinanciamento
+        financiamento={f}
+        recalculando={recalculando}
+        destaque={destaque('financiamento')}
+        onDuracao={(d) => onMudar({ duracao_meses: d })}
+      />
 
       <CardConsorcio
         consorcio={simulacao.consorcio}
         recalculando={recalculando}
+        destaque={destaque('consorcio')}
         onDuracao={(d) => onMudar({ consorcio_duracao_meses: d })}
       />
 
-      <CardJuntar juntar={simulacao.juntar} item={objetivo.item} />
+      <CardJuntar juntar={simulacao.juntar} item={objetivo.item} destaque={destaque('juntar')} />
 
       <p className="nota">Extrato fictício. Taxas reais publicadas pelo Banco Central.</p>
     </main>

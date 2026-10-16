@@ -1,24 +1,31 @@
 import type { Consorcio } from './api'
+import { PorQueNao, SeloDestaque, type Destaque } from './Destaque'
 import { Ressalvas } from './Ressalvas'
 import { formatarPercentual, formatarReais } from './format'
 
 type Props = {
   consorcio: Consorcio
   recalculando: boolean
+  destaque: Destaque
   onDuracao: (duracaoMeses: number) => void
 }
 
-export function CardConsorcio({ consorcio: c, recalculando, onDuracao }: Props) {
+export function CardConsorcio({ consorcio: c, recalculando, destaque, onDuracao }: Props) {
   const { janela } = c
   const posicao = (mes: number) =>
     `${((mes - 1) / Math.max(janela.pior_caso_mes - 1, 1)) * 100}%`
 
   return (
-    <article className="caminho" aria-labelledby="caminho-consorcio" aria-busy={recalculando}>
+    <article
+      className={destaque.recomendado ? 'caminho caminho-recomendado' : 'caminho'}
+      aria-labelledby="caminho-consorcio"
+      aria-busy={recalculando}
+    >
       <div className="caminho-topo">
         <h2 id="caminho-consorcio" className="caminho-titulo">
           Consórcio
         </h2>
+        <SeloDestaque destaque={destaque} />
         {c.acima_da_margem && <span className="selo selo-alerta">Acima da margem</span>}
       </div>
       <dl className="caminho-numeros">
@@ -72,6 +79,7 @@ export function CardConsorcio({ consorcio: c, recalculando, onDuracao }: Props) 
         reserva de {formatarPercentual(c.fundo_reserva_percentual)} e reajuste anual estimado de{' '}
         {formatarPercentual(c.reajuste_anual_percentual)} na carta e nas parcelas.
       </p>
+      <PorQueNao destaque={destaque} />
       <Ressalvas ressalvas={c.ressalvas} />
     </article>
   )

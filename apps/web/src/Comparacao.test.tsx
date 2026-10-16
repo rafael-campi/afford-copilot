@@ -43,6 +43,30 @@ const juntar35 = {
   ],
 }
 
+type RecomendacaoFixture = {
+  caminho: string | null
+  avaliacoes: { caminho: string; motivo_codigo: string | null; motivo_texto: string | null }[]
+  ressalvas: { codigo: string; texto: string }[]
+  ajustes: {
+    entrada_minima_centavos: number | null
+    prazo_minimo_meses: number | null
+    valor_maximo_centavos: number | null
+  } | null
+}
+
+const recomendaJuntar: RecomendacaoFixture = {
+  caminho: 'juntar',
+  avaliacoes: [
+    { caminho: 'financiamento', motivo_codigo: 'custo_maior', motivo_texto: 'Custa R$ 147.085,18 no total, mais do que R$ 71.400,00.' },
+    { caminho: 'consorcio', motivo_codigo: 'custo_maior', motivo_texto: 'Custa R$ 97.956,00 no total, mais do que R$ 71.400,00.' },
+    { caminho: 'juntar', motivo_codigo: null, motivo_texto: null },
+  ],
+  ressalvas: [
+    { codigo: 'acima_da_sobra', texto: 'A parcela de R$ 2.040,00 cabe na margem, mas passa do que sobra por mês hoje (R$ 1.900,00).' },
+  ],
+  ajustes: null,
+}
+
 function simulacao(
   duracao: number,
   parcela: number,
@@ -54,10 +78,12 @@ function simulacao(
     custo_total_centavos: number | null
     preco_na_compra_centavos: number | null
   } = juntar35,
+  recomendacao: RecomendacaoFixture = recomendaJuntar,
 ) {
   return {
     consorcio,
     juntar,
+    recomendacao,
     id: `sim-${duracao}`,
     snapshot_id: 'config-taxa-fixa-2026-10',
     objetivo: { item: 'carro', valor_centavos: 8_000_000, prazo_meses: 60, entrada_centavos: 0 },
@@ -258,6 +284,52 @@ describe('Comparação', () => {
     expect(card).toHaveTextContent('Depois do Prazo')
     await userEvent.selectOptions(screen.getByLabelText('Duração'), '60')
     expect(await screen.findByText('Não alcança o preço em 20 anos')).toBeInTheDocument()
+  })
+
+  it('highlights the Recomendação and says why the others lost', async () => {
+    fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/simulacoes': () => json(simulacao(72, 199_114, 14_708_518, false), 201),
+    })
+
+    render(<App />)
+    await preencherObjetivo()
+
+    const juntar = await screen.findByRole('article', { name: /Juntar e comprar à vista/ })
+    expect(juntar).toHaveTextContent('Recomendado')
+    const financiamento = screen.getByRole('article', { name: 'Financiamento' })
+    expect(financiamento).not.toHaveTextContent('Recomendado')
+    expect(financiamento).toHaveTextContent('Por que não: Custa R$ 147.085,18 no total')
+    expect(screen.getByRole('note', { name: 'Atenção à recomendação' })).toHaveTextContent(
+      'passa do que sobra por mês hoje',
+    )
+  })
+
+  it('suggests adjustments when no Caminho fits', async () => {
+    const nenhum: RecomendacaoFixture = {
+      caminho: null,
+      avaliacoes: [
+        { caminho: 'financiamento', motivo_codigo: 'acima_da_margem', motivo_texto: 'A parcela de R$ 1.991,14 passa da sua margem de R$ 1.500,00.' },
+        { caminho: 'consorcio', motivo_codigo: 'nao_entrega_no_prazo', motivo_texto: 'Sem lance, a carta pode sair só no mês 72.' },
+        { caminho: 'juntar', motivo_codigo: 'nao_entrega_no_prazo', motivo_texto: 'Você só teria o carro no mês 54.' },
+      ],
+      ressalvas: [],
+      ajustes: { entrada_minima_centavos: 1_980_000, prazo_minimo_meses: 54, valor_maximo_centavos: 6_020_000 },
+    }
+    fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/simulacoes': () =>
+        json(simulacao(72, 199_114, 14_708_518, true, consorcio48, juntar35, nenhum), 201),
+    })
+
+    render(<App />)
+    await preencherObjetivo()
+
+    const painel = await screen.findByRole('region', { name: 'Nenhum caminho cabe hoje' })
+    expect(painel).toHaveTextContent('Dar uma Entrada de R$ 19.800')
+    expect(painel).toHaveTextContent('Aceitar um Prazo de 54 meses')
+    expect(painel).toHaveTextContent('Escolher um carro de até R$ 60.200')
+    expect(screen.queryByText('Recomendado')).not.toBeInTheDocument()
   })
 
   it('explains when the API rejects the Objetivo', async () => {
