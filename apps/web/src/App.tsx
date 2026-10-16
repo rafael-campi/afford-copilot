@@ -5,6 +5,7 @@ import {
   enviarMensagem,
   entrarComo,
   fetchHome,
+  logout,
   ObjetivoInvalido,
   type HomeData,
   type NovaSimulacao,
@@ -13,15 +14,17 @@ import {
 } from './api'
 import { Comparacao } from './Comparacao'
 import { Conversa, type Mensagem } from './Conversa'
-import { EscolherPersona } from './EscolherPersona'
+import { Entrar } from './Entrar'
 import { doItem } from './format'
 import { Home } from './Home'
 import { ObjetivoForm } from './ObjetivoForm'
+import { SemExtrato } from './SemExtrato'
 
 type Estado =
   | { tipo: 'carregando' }
   | { tipo: 'erro' }
   | { tipo: 'sem-sessao' }
+  | { tipo: 'sem-extrato' }
   | { tipo: 'pronto'; dados: HomeData }
 
 type Tela =
@@ -63,6 +66,21 @@ export function App() {
     } catch {
       setEstado({ tipo: 'erro' })
     }
+  }
+
+  async function recarregar() {
+    setTela({ nome: 'home' })
+    setEstado({ tipo: 'carregando' })
+    try {
+      setEstado(await fetchHome())
+    } catch {
+      setEstado({ tipo: 'erro' })
+    }
+  }
+
+  async function sair() {
+    await logout()
+    await recarregar()
   }
 
   async function simularObjetivo(pedido: NovaSimulacao) {
@@ -145,7 +163,10 @@ export function App() {
     }
   }
 
-  if (estado.tipo === 'sem-sessao') return <EscolherPersona onEscolher={escolher} />
+  if (estado.tipo === 'sem-sessao') {
+    return <Entrar onEscolherPersona={escolher} onEntrou={recarregar} />
+  }
+  if (estado.tipo === 'sem-extrato') return <SemExtrato onSair={sair} />
 
   if (estado.tipo === 'pronto' && tela.nome === 'objetivo') {
     return (
@@ -193,6 +214,7 @@ export function App() {
       estado={estado}
       onEnviar={conversar}
       onFormulario={() => setTela({ nome: 'objetivo', erro: null, enviando: false })}
+      onSair={sair}
     />
   )
 }

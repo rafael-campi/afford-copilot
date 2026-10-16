@@ -752,3 +752,24 @@ input {
   justify-content: space-between;
   font-variant-numeric: tabular-nums;
 }
+
+.entrar-alternativas {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.perfil {
+  position: relative;
+}
+
+.perfil-menu {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 14px;
+  box-shadow: 0 4px 16px rgb(18 33 46 / 0.12);
+}

@@ -20,6 +20,7 @@ from api.rotas.simulacoes import NovaSimulacao, SimulacaoOut, criar_simulacao
 
 @dataclass
 class EstadoConversa:
+    conta_id: str
     persona_id: str
     objetivo: ObjetivoParcial = field(default_factory=ObjetivoParcial)
     simulacoes: list[SimulacaoOut] = field(default_factory=list)
@@ -66,16 +67,18 @@ def router(ctx: Contexto) -> APIRouter:
     rotas = APIRouter()
 
     def conversa_da_sessao(conversa_id: str, request: Request) -> EstadoConversa:
-        persona_id = ctx.persona_da_sessao(request)
+        conta_id = ctx.conta_da_sessao(request).id
         conversa = ctx.conversas.get(conversa_id)
-        if not isinstance(conversa, EstadoConversa) or conversa.persona_id != persona_id:
+        if not isinstance(conversa, EstadoConversa) or conversa.conta_id != conta_id:
             raise HTTPException(status_code=404, detail="Conversa não encontrada.")
         return conversa
 
     @rotas.post("/v1/conversas", status_code=201)
     def criar(request: Request) -> NovaConversa:
         conversa_id = str(uuid.uuid4())
-        ctx.conversas[conversa_id] = EstadoConversa(persona_id=ctx.persona_da_sessao(request))
+        ctx.conversas[conversa_id] = EstadoConversa(
+            conta_id=ctx.conta_da_sessao(request).id, persona_id=ctx.persona_da_sessao(request)
+        )
         return NovaConversa(id=conversa_id)
 
     @rotas.get("/v1/conversas/{conversa_id}")
@@ -104,7 +107,7 @@ def router(ctx: Contexto) -> APIRouter:
                     "A Entrada precisa ser menor do que o valor do item. Pode conferir?"
                 )
             try:
-                simulacao = criar_simulacao(ctx, persona_id, dados)
+                simulacao = criar_simulacao(ctx, conversa.conta_id, persona_id, dados)
             except HTTPException as erro:
                 if erro.status_code != 422:
                     raise
@@ -115,7 +118,8 @@ def router(ctx: Contexto) -> APIRouter:
                 )
             return Simulado(simulacao=simulacao, fatos=fatos_da_simulacao(simulacao))
 
-        grafo = construir_grafo(ctx.llm(), simular_opcoes, [ctx.personas[persona_id].nome])
+        nomes = [ctx.personas[persona_id].nome]
+        grafo = construir_grafo(ctx.llm_da_conta(conversa.conta_id), simular_opcoes, nomes)
         try:
             entrada = {"mensagem": mensagem.texto, "objetivo": conversa.objetivo}
             estado: dict[str, Any] = grafo.invoke(entrada)

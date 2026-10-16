@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { fetchPersonas, type Persona } from './api'
 
-export function EscolherPersona({ onEscolher }: { onEscolher: (personaId: string) => void }) {
+type Props = { onEscolher: (personaId: string) => void; children?: ReactNode }
+
+export function EscolherPersona({ onEscolher, children }: Props) {
   const [personas, setPersonas] = useState<Persona[] | null>(null)
   const [erro, setErro] = useState(false)
 
@@ -46,6 +48,7 @@ export function EscolherPersona({ onEscolher }: { onEscolher: (personaId: string
           ))}
         </ul>
       )}
+      {children}
     </main>
   )
 }
