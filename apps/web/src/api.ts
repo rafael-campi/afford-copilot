@@ -61,6 +61,10 @@ export type Financiamento = {
   parcela_centavos: number
   custo_total_centavos: number
   juros_centavos: number
+  iof_centavos: number
+  tarifas_centavos: number
+  cet_mensal_percentual: string
+  cet_anual_percentual: string
   taxa_mensal: string
   acima_da_margem: boolean
   duracoes_disponiveis: number[]
