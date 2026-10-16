@@ -24,6 +24,7 @@ def com_dados(http: TestClient) -> str:
         "/v1/simulacoes", json={"item": "carro", "valor_centavos": 8_000_000, "prazo_meses": 60}
     )
     simulacao_id: str = simulacao.json()["id"]
+    http.post("/v1/planos", json={"simulacao_id": simulacao_id, "caminho": "juntar"})
     return simulacao_id
 
 
@@ -70,6 +71,7 @@ def test_nothing_of_the_account_remains_readable() -> None:
     assert nova.get("/v1/importacoes").json() == []
     assert nova.get("/v1/consentimentos").json() == []
     assert nova.get(f"/v1/simulacoes/{simulacao_id}").status_code == 404
+    assert nova.get("/v1/planos").json() == []
     assert [e["tipo"] for e in nova.get("/v1/auditoria").json()["eventos"]] == ["cadastro"]
 
 

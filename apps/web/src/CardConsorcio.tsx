@@ -7,10 +7,11 @@ type Props = {
   consorcio: Consorcio
   recalculando: boolean
   destaque: Destaque
+  onEscolher: () => void
   onDuracao: (duracaoMeses: number) => void
 }
 
-export function CardConsorcio({ consorcio: c, recalculando, destaque, onDuracao }: Props) {
+export function CardConsorcio({ consorcio: c, recalculando, destaque, onDuracao, onEscolher }: Props) {
   const { janela } = c
   const posicao = (mes: number) =>
     `${((mes - 1) / Math.max(janela.pior_caso_mes - 1, 1)) * 100}%`
@@ -81,6 +82,9 @@ export function CardConsorcio({ consorcio: c, recalculando, destaque, onDuracao 
       </p>
       <PorQueNao destaque={destaque} />
       <Ressalvas ressalvas={c.ressalvas} />
+      <button type="button" className="escolher secondary-button" onClick={onEscolher}>
+        Escolher este caminho
+      </button>
     </article>
   )
 }

@@ -12,6 +12,7 @@ from api.rotas import (
     exclusao,
     importacoes,
     orcamento,
+    planos,
     regras,
     sessao,
     simulacoes,
@@ -46,6 +47,7 @@ def create_app(config: Config | None = None) -> FastAPI:
     app.include_router(simulacoes.router(ctx))
     app.include_router(conversas.router(ctx))
     app.include_router(regras.router(ctx))
+    app.include_router(planos.router(ctx))
     return app
 
 

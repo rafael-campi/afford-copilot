@@ -5,11 +5,11 @@ from fastapi import APIRouter, Request
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from api.banco import Confirmacao, Consentimento, Conta, Importacao, TransacaoImportada
+from api.banco import Confirmacao, Consentimento, Conta, Importacao, Plano, TransacaoImportada
 from api.confirmacoes import ConfirmacaoOut, executor, solicitar_confirmacao
 from api.contexto import Contexto
 
-APAGA = ["conta", "consentimentos", "extratos importados", "simulações", "conversas"]
+APAGA = ["conta", "consentimentos", "extratos importados", "planos", "simulações", "conversas"]
 
 
 @executor("apagar_conta")
@@ -19,6 +19,7 @@ def _apagar(db: Session, conta_id: str, dados: dict[str, Any], agora: datetime) 
     db.execute(delete(TransacaoImportada).where(TransacaoImportada.importacao_id.in_(importacoes)))
     db.execute(delete(Importacao).where(Importacao.conta_id == conta_id))
     db.execute(delete(Consentimento).where(Consentimento.conta_id == conta_id))
+    db.execute(delete(Plano).where(Plano.conta_id == conta_id))
     db.flush()
     db.execute(delete(Confirmacao).where(Confirmacao.conta_id == conta_id))
     db.execute(delete(Conta).where(Conta.id == conta_id))

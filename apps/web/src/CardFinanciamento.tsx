@@ -7,10 +7,11 @@ type Props = {
   financiamento: Financiamento
   recalculando: boolean
   destaque: Destaque
+  onEscolher: () => void
   onDuracao: (duracaoMeses: number) => void
 }
 
-export function CardFinanciamento({ financiamento: f, recalculando, destaque, onDuracao }: Props) {
+export function CardFinanciamento({ financiamento: f, recalculando, destaque, onDuracao, onEscolher }: Props) {
   return (
     <article
       className={destaque.recomendado ? 'caminho caminho-recomendado' : 'caminho'}
@@ -107,6 +108,9 @@ export function CardFinanciamento({ financiamento: f, recalculando, destaque, on
           Ver no site do BCB
         </a>
       </p>
+      <button type="button" className="escolher secondary-button" onClick={onEscolher}>
+        Escolher este caminho
+      </button>
     </article>
   )
 }
