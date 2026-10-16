@@ -84,7 +84,7 @@ export function Conectar({ bancoInicial, onConectado, onSair }: Props) {
           Conectar meu banco
         </button>
         <button type="button" className="secondary-button" onClick={() => setPasso('importar')}>
-          Importar extrato (OFX)
+          Importar extrato (OFX ou CSV)
         </button>
         <button type="button" className="link-button" onClick={onSair}>
           Sair

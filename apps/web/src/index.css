@@ -842,3 +842,20 @@ a.link-button {
   text-decoration: none;
   align-self: flex-start;
 }
+
+.tabela-rolagem {
+  overflow-x: auto;
+}
+
+.amostra {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.amostra th,
+.amostra td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--divider);
+}

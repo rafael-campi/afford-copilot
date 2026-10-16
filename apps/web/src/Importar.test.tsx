@@ -26,9 +26,9 @@ afterEach(() => {
 })
 
 async function escolherArquivo() {
-  await userEvent.click(await screen.findByRole('button', { name: 'Importar extrato (OFX)' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Importar extrato (OFX ou CSV)' }))
   const arquivo = new File(['<OFX>'], 'extrato.ofx', { type: 'application/x-ofx' })
-  await userEvent.upload(screen.getByLabelText('Arquivo OFX'), arquivo)
+  await userEvent.upload(screen.getByLabelText('Arquivo do extrato'), arquivo)
 }
 
 describe('Importar extrato', () => {
@@ -64,6 +64,43 @@ describe('Importar extrato', () => {
     expect(await screen.findByLabelText('O que você quer conquistar?')).toBeInTheDocument()
   })
 
+  it('asks which column is which for a CSV, then previews it', async () => {
+    const enviados: FormData[] = []
+    fakeApi({
+      'GET /api/v1/home': semExtrato,
+      'GET /api/v1/bancos': () => json([]),
+      'GET /api/v1/sessoes': sessao,
+      'POST /api/v1/importacoes': (init) => {
+        const corpo = init?.body as FormData
+        enviados.push(corpo)
+        return corpo.get('coluna_valor')
+          ? json(pedido, 201)
+          : json({
+              precisa_mapear: true,
+              colunas: ['Data', 'Histórico', 'Valor'],
+              amostra: [['01/07/2026', 'PAO DE ACUCAR 3859', '-158,44']],
+              sugestao: { data: 'Data', descricao: 'Histórico', valor: 'Valor' },
+            })
+      },
+    })
+
+    render(<App />)
+    await userEvent.click(await screen.findByRole('button', { name: 'Importar extrato (OFX ou CSV)' }))
+    const arquivo = new File(['Data;Histórico;Valor'], 'extrato.csv', { type: 'text/csv' })
+    await userEvent.upload(screen.getByLabelText('Arquivo do extrato'), arquivo)
+
+    const mapa = await screen.findByRole('region', { name: 'Qual coluna é qual?' })
+    expect(mapa).toHaveTextContent('PAO DE ACUCAR 3859')
+    expect(screen.getByLabelText('Coluna da data')).toHaveValue('Data')
+    expect(screen.getByLabelText('Coluna da descrição')).toHaveValue('Histórico')
+    expect(screen.getByLabelText('Coluna do valor')).toHaveValue('Valor')
+    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+
+    expect(await screen.findByRole('region', { name: 'Prévia do extrato' })).toBeInTheDocument()
+    expect(enviados[1].get('coluna_descricao')).toBe('Histórico')
+    expect(enviados[1].get('arquivo')).toBeInstanceOf(File)
+  })
+
   it('explains a file it cannot read', async () => {
     fakeApi({
       'GET /api/v1/home': semExtrato,
@@ -87,7 +124,7 @@ describe('Importar extrato', () => {
     })
 
     render(<App />)
-    await userEvent.click(await screen.findByRole('button', { name: 'Importar extrato (OFX)' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Importar extrato (OFX ou CSV)' }))
 
     expect(screen.getByRole('link', { name: 'Baixar um extrato de exemplo' })).toHaveAttribute(
       'href',

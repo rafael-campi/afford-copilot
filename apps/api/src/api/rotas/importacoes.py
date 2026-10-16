@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, Form, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from api.banco import Importacao, TransacaoImportada
 from api.confirmacoes import executor, solicitar_confirmacao
 from api.contexto import Contexto
+from extrato.csv_extrato import CsvInvalido, ler_csv, ler_tabela, sugerir_mapa
 from extrato.ofx import ArquivoInvalido, ler_ofx
 from extrato.orcamento import TransacaoBruta
 from seed.gerador import gerar_extrato
@@ -37,6 +38,13 @@ class PedidoImportacao(BaseModel):
     acao: str
     previa: Previa
     aviso: str | None
+
+
+class PedidoMapeamento(BaseModel):
+    precisa_mapear: bool
+    colunas: list[str]
+    amostra: list[list[str]]
+    sugestao: dict[str, str | None]
 
 
 class ImportacaoOut(BaseModel):
@@ -79,24 +87,47 @@ def _serializar(transacoes: list[TransacaoBruta]) -> list[list[Any]]:
 def router(ctx: Contexto) -> APIRouter:
     rotas = APIRouter()
 
-    @rotas.post("/v1/importacoes", status_code=201)
-    async def importar(arquivo: UploadFile, request: Request) -> PedidoImportacao:
+    @rotas.post("/v1/importacoes", status_code=201, response_model=None)
+    async def importar(
+        arquivo: UploadFile,
+        request: Request,
+        response: Response,
+        coluna_data: str | None = Form(default=None),
+        coluna_descricao: str | None = Form(default=None),
+        coluna_valor: str | None = Form(default=None),
+    ) -> PedidoImportacao | PedidoMapeamento:
         conta = ctx.conta_da_sessao(request)
         conteudo = await arquivo.read(TAMANHO_MAXIMO + 1)
         if len(conteudo) > TAMANHO_MAXIMO:
             raise HTTPException(
                 status_code=413, detail="O arquivo passa de 2 MB. Exporte só os últimos meses."
             )
-        try:
-            transacoes = ler_ofx(conteudo)
-        except ArquivoInvalido as erro:
-            raise HTTPException(
-                status_code=422,
-                detail=(
-                    "Não encontrei transações nesse arquivo. "
-                    "Exporte o extrato em OFX pelo app do seu banco."
-                ),
-            ) from erro
+        formato = "csv" if (arquivo.filename or "").lower().endswith(".csv") else "ofx"
+        if formato == "csv":
+            try:
+                tabela = ler_tabela(conteudo)
+                if not (coluna_data and coluna_descricao and coluna_valor):
+                    response.status_code = 200
+                    return PedidoMapeamento(
+                        precisa_mapear=True,
+                        colunas=tabela.colunas,
+                        amostra=tabela.linhas[:5],
+                        sugestao=sugerir_mapa(tabela.colunas),
+                    )
+                transacoes = ler_csv(tabela, coluna_data, coluna_descricao, coluna_valor)
+            except CsvInvalido as erro:
+                raise HTTPException(status_code=422, detail=str(erro)) from erro
+        else:
+            try:
+                transacoes = ler_ofx(conteudo)
+            except ArquivoInvalido as erro:
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        "Não encontrei transações nesse arquivo. "
+                        "Exporte o extrato em OFX pelo app do seu banco."
+                    ),
+                ) from erro
         inicio, fim = transacoes[0].data, transacoes[-1].data
         dias = (fim - inicio).days + 1
         if dias < DIAS_MINIMOS:
@@ -106,7 +137,7 @@ def router(ctx: Contexto) -> APIRouter:
             )
         horas = ctx.config.horas_de_importacao
         dados = {
-            "formato": "ofx",
+            "formato": formato,
             "inicio": inicio.isoformat(),
             "fim": fim.isoformat(),
             "horas": horas,
