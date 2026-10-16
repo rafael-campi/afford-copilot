@@ -3,21 +3,42 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from agentes import LLMClient, ModeloIndisponivel, RecusaDoModelo
 from agentes.anthropic_llm import AnthropicLLM
 from agentes.categorizacao import categorizar_restantes
 from api.auditoria import LLMAuditado
-from api.banco import Consentimento, Conta, EventoAuditoria, criar_engine, fabrica_de_sessoes
+from api.banco import (
+    Consentimento,
+    Conta,
+    EventoAuditoria,
+    Importacao,
+    TransacaoImportada,
+    criar_engine,
+    fabrica_de_sessoes,
+)
 from api.config import Config
 from extrato.categorizacao import OUTROS, pela_regra
 from extrato.orcamento import ResumoOrcamento, TransacaoBruta, resumir_orcamento
 from mercado import ProjecoesFocus, RepositorioFocus, RepositorioSnapshots, SnapshotTaxas
-from seed.gerador import ExtratoGerado, gerar_extrato
+from seed.gerador import gerar_extrato
 from seed.personas import PERSONAS, Persona
 from simulador import Projecoes, SnapshotMercado
 from simulador.recomendacao import reais
+
+IMPORTACAO_APAGADA = "O extrato importado foi apagado depois de 24 horas. Importe de novo."
+
+
+@dataclass(frozen=True)
+class Fonte:
+    """Where an account's Extrato comes from right now: a Consentimento or an Importação."""
+
+    chave: str
+    """Cache key: the same source always has the same transactions."""
+    transacoes: tuple[TransacaoBruta, ...]
+    nomes: tuple[str, ...]
+    """Personal names to mask before any model call."""
 
 
 @dataclass(frozen=True)
@@ -89,15 +110,67 @@ class Contexto:
                 .order_by(Consentimento.concedido_em.desc())
             )
 
-    def persona_da_sessao(self, request: Request) -> str:
-        """Tool `analisar_orcamento`'s gate: the Extrato the account's Consentimento covers.
+    def importacao_vigente(self, conta_id: str) -> tuple[Importacao | None, bool]:
+        """The newest Importação still kept, and whether an older one was just deleted."""
+        agora = self.config.agora()
+        apagou = False
+        with self.banco.begin() as db:
+            todas = db.scalars(
+                select(Importacao)
+                .where(Importacao.conta_id == conta_id)
+                .order_by(Importacao.criada_em.desc())
+            ).all()
+            vigentes = []
+            for importacao in todas:
+                if importacao.expira_em is not None and _como_utc(importacao.expira_em) <= agora:
+                    db.execute(
+                        delete(TransacaoImportada).where(
+                            TransacaoImportada.importacao_id == importacao.id
+                        )
+                    )
+                    db.delete(importacao)
+                    apagou = True
+                else:
+                    vigentes.append(importacao)
+        return (vigentes[0] if vigentes else None), apagou
 
-        Every successful read is audited against the Consentimento that allowed it.
+    def fonte_da_conta(self, conta_id: str, auditar: bool = True) -> Fonte:
+        """Tool `analisar_orcamento`'s gate: the Extrato the account may read now.
+
+        The newest of an active Consentimento and a kept Importação wins. Every read is
+        audited against the authorization that allowed it.
         """
-        conta = self.conta_da_sessao(request)
-        consentimento = self.consentimento_vigente(conta.id)
+        with self.banco() as db:
+            conta = db.get(Conta, conta_id)
+        assert conta is not None
+        consentimento = self.consentimento_vigente(conta_id)
+        importacao, apagou = self.importacao_vigente(conta_id)
+        if importacao is not None and (
+            consentimento is None
+            or _como_utc(importacao.criada_em) >= _como_utc(consentimento.concedido_em)
+        ):
+            with self.banco() as db:
+                linhas = db.scalars(
+                    select(TransacaoImportada)
+                    .where(TransacaoImportada.importacao_id == importacao.id)
+                    .order_by(TransacaoImportada.data, TransacaoImportada.id)
+                ).all()
+            if auditar:
+                self.auditar(conta_id, "importacao_usada", {"importacao_id": importacao.id})
+            return Fonte(
+                chave=f"importacao:{importacao.id}",
+                transacoes=tuple(
+                    TransacaoBruta(
+                        data=t.data, descricao=t.descricao, valor_centavos=t.valor_centavos
+                    )
+                    for t in linhas
+                ),
+                nomes=(conta.nome,),
+            )
         if consentimento is None:
-            raise HTTPException(status_code=409, detail=SEM_EXTRATO)
+            raise HTTPException(
+                status_code=409, detail=IMPORTACAO_APAGADA if apagou else SEM_EXTRATO
+            )
         if _como_utc(consentimento.expira_em) <= self.config.agora():
             data = consentimento.expira_em.strftime("%d/%m/%Y")
             raise HTTPException(
@@ -107,8 +180,17 @@ class Contexto:
             raise HTTPException(
                 status_code=409, detail="Seu consentimento não cobre suas transações."
             )
-        self.auditar(conta.id, "consentimento_usado", {"consentimento_id": consentimento.id})
-        return consentimento.banco
+        if auditar:
+            self.auditar(conta_id, "consentimento_usado", {"consentimento_id": consentimento.id})
+        persona = self.personas[consentimento.banco]
+        return Fonte(
+            chave=f"persona:{persona.id}",
+            transacoes=tuple(gerar_extrato(persona.id, self.config.seed).transacoes),
+            nomes=(conta.nome, persona.nome),
+        )
+
+    def fonte_da_sessao(self, request: Request, auditar: bool = True) -> Fonte:
+        return self.fonte_da_conta(self.conta_da_sessao(request).id, auditar)
 
     def reautenticado(self, request: Request) -> bool:
         marca = request.session.get("reautenticado_em")
@@ -145,25 +227,20 @@ class Contexto:
             ),
         )
 
-    def extrato(self, persona_id: str) -> ExtratoGerado:
-        return gerar_extrato(persona_id, self.config.seed)
-
-    def orcamento(self, persona_id: str) -> ResumoOrcamento:
-        return resumir_orcamento(
-            self.extrato(persona_id).transacoes, self.config.margem_segura_percentual
-        )
+    def orcamento(self, fonte: Fonte) -> ResumoOrcamento:
+        return resumir_orcamento(list(fonte.transacoes), self.config.margem_segura_percentual)
 
     def extrato_categorizado(
-        self, persona_id: str, llm: LLMClient | None = None
+        self, fonte: Fonte, llm: LLMClient | None = None
     ) -> list[TransacaoCategorizada]:
-        """Rules first; what they miss goes to the model once per Persona.
+        """Rules first; what they miss goes to the model once per source.
 
         When the model is unavailable the rest stays in Outros and nothing is cached,
         so the next request tries again.
         """
-        if persona_id in self._categorizados:
-            return self._categorizados[persona_id]
-        transacoes = self.extrato(persona_id).transacoes
+        if fonte.chave in self._categorizados:
+            return self._categorizados[fonte.chave]
+        transacoes = fonte.transacoes
         regras = [pela_regra(t) for t in transacoes]
         restantes = [
             (i, t.descricao, reais(abs(t.valor_centavos)))
@@ -171,9 +248,7 @@ class Contexto:
             if regra is None
         ]
         try:
-            do_modelo = categorizar_restantes(
-                llm or self.llm(), restantes, [self.personas[persona_id].nome]
-            )
+            do_modelo = categorizar_restantes(llm or self.llm(), restantes, list(fonte.nomes))
             guardar = True
         except (ModeloIndisponivel, RecusaDoModelo):
             do_modelo, guardar = {}, False
@@ -186,5 +261,5 @@ class Contexto:
             for i, (t, regra) in enumerate(zip(transacoes, regras, strict=True))
         ]
         if guardar:
-            self._categorizados[persona_id] = categorizados
+            self._categorizados[fonte.chave] = categorizados
         return categorizados

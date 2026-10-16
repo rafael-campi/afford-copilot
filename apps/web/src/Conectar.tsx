@@ -10,6 +10,7 @@ import {
 } from './api'
 import { ConfirmarComSenha } from './ConfirmarComSenha'
 import { formatarData } from './format'
+import { Importar } from './Importar'
 
 type Props = {
   bancoInicial: string | null
@@ -17,7 +18,7 @@ type Props = {
   onSair: () => void
 }
 
-type Passo = 'inicio' | 'bancos' | 'autorizar'
+type Passo = 'inicio' | 'bancos' | 'autorizar' | 'importar'
 
 const ESCOPOS = [
   { id: 'transacoes', rotulo: 'Transações dos últimos meses', obrigatorio: true },
@@ -65,6 +66,10 @@ export function Conectar({ bancoInicial, onConectado, onSair }: Props) {
     onConectado()
   }
 
+  if (passo === 'importar') {
+    return <Importar onImportado={onConectado} onVoltar={() => setPasso('inicio')} />
+  }
+
   if (passo === 'inicio') {
     return (
       <main className="tela">
@@ -77,6 +82,9 @@ export function Conectar({ bancoInicial, onConectado, onSair }: Props) {
         </header>
         <button type="button" className="primary-button" onClick={() => setPasso('bancos')}>
           Conectar meu banco
+        </button>
+        <button type="button" className="secondary-button" onClick={() => setPasso('importar')}>
+          Importar extrato (OFX)
         </button>
         <button type="button" className="link-button" onClick={onSair}>
           Sair

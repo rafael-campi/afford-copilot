@@ -35,6 +35,8 @@ class Config:
         default_factory=lambda: os.environ.get("DATABASE_URL", "sqlite+pysqlite:///:memory:")
     )
     minutos_de_reautenticacao: int = 5
+    horas_de_importacao: int | None = 24
+    """Imported Extratos are deleted after this many hours (None keeps them)."""
     hasher: PasswordHasher = field(default_factory=PasswordHasher)
     """argon2id with the library's recommended parameters."""
     llm: LLMClient | None = None

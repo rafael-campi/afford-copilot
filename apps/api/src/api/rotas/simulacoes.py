@@ -5,7 +5,7 @@ from decimal import Decimal
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, model_validator
 
-from api.contexto import Contexto
+from api.contexto import Contexto, Fonte
 from simulador import Objetivo, Orcamento, simular
 
 
@@ -144,7 +144,7 @@ def _percentual(fracao: Decimal) -> Decimal:
 
 
 def criar_simulacao(
-    ctx: Contexto, conta_id: str, persona_id: str, dados: NovaSimulacao
+    ctx: Contexto, conta_id: str, fonte: Fonte, dados: NovaSimulacao
 ) -> SimulacaoOut:
     """Tool `simular_opcoes`: runs the simulador with the person's own budget, stores the
     result under their account and audits the call."""
@@ -166,7 +166,7 @@ def criar_simulacao(
             status_code=422,
             detail=(f"Duração de grupo indisponível. Opções: {mercado.consorcio_duracoes_meses}."),
         )
-    resumo = ctx.orcamento(persona_id)
+    resumo = ctx.orcamento(fonte)
     objetivo = Objetivo(
         item=dados.item,
         valor_centavos=dados.valor_centavos,
@@ -265,8 +265,8 @@ def router(ctx: Contexto) -> APIRouter:
 
     @rotas.post("/v1/simulacoes", status_code=201)
     def criar(dados: NovaSimulacao, request: Request) -> SimulacaoOut:
-        persona_id = ctx.persona_da_sessao(request)
-        return criar_simulacao(ctx, ctx.conta_da_sessao(request).id, persona_id, dados)
+        fonte = ctx.fonte_da_sessao(request)
+        return criar_simulacao(ctx, ctx.conta_da_sessao(request).id, fonte, dados)
 
     @rotas.get("/v1/simulacoes/{simulacao_id}")
     def ler(simulacao_id: str, request: Request) -> SimulacaoOut:
