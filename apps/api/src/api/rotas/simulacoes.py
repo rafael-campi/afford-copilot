@@ -143,8 +143,12 @@ def _percentual(fracao: Decimal) -> Decimal:
     return (fracao * 100).quantize(Decimal("0.01"))
 
 
-def criar_simulacao(ctx: Contexto, persona_id: str, dados: NovaSimulacao) -> SimulacaoOut:
-    """Runs the simulador with the person's own budget and stores the result."""
+def criar_simulacao(
+    ctx: Contexto, conta_id: str, persona_id: str, dados: NovaSimulacao
+) -> SimulacaoOut:
+    """Tool `simular_opcoes`: runs the simulador with the person's own budget, stores the
+    result under their account and audits the call."""
+    ctx.auditar(conta_id, "ferramenta:simular_opcoes")
     taxas, focus, mercado = ctx.mercado()
     if (
         dados.duracao_meses is not None
@@ -252,7 +256,7 @@ def criar_simulacao(ctx: Contexto, persona_id: str, dados: NovaSimulacao) -> Sim
             ajustes=None if r.ajustes is None else AjustesOut(**vars(r.ajustes)),
         ),
     )
-    ctx.simulacoes[saida.id] = (persona_id, saida)
+    ctx.simulacoes[saida.id] = (conta_id, saida)
     return saida
 
 
@@ -261,13 +265,14 @@ def router(ctx: Contexto) -> APIRouter:
 
     @rotas.post("/v1/simulacoes", status_code=201)
     def criar(dados: NovaSimulacao, request: Request) -> SimulacaoOut:
-        return criar_simulacao(ctx, ctx.persona_da_sessao(request), dados)
+        persona_id = ctx.persona_da_sessao(request)
+        return criar_simulacao(ctx, ctx.conta_da_sessao(request).id, persona_id, dados)
 
     @rotas.get("/v1/simulacoes/{simulacao_id}")
     def ler(simulacao_id: str, request: Request) -> SimulacaoOut:
-        persona_id = ctx.persona_da_sessao(request)
+        conta_id = ctx.conta_da_sessao(request).id
         dono, simulacao = ctx.simulacoes.get(simulacao_id, (None, None))
-        if dono != persona_id or not isinstance(simulacao, SimulacaoOut):
+        if dono != conta_id or not isinstance(simulacao, SimulacaoOut):
             raise HTTPException(status_code=404, detail="Simulação não encontrada.")
         return simulacao
 

@@ -30,11 +30,15 @@ export type Persona = {
   descricao: string
 }
 
-export type ResultadoHome = { tipo: 'pronto'; dados: HomeData } | { tipo: 'sem-sessao' }
+export type ResultadoHome =
+  | { tipo: 'pronto'; dados: HomeData }
+  | { tipo: 'sem-sessao' }
+  | { tipo: 'sem-extrato' }
 
 export async function fetchHome(): Promise<ResultadoHome> {
   const response = await fetch('/api/v1/home')
   if (response.status === 401) return { tipo: 'sem-sessao' }
+  if (response.status === 409) return { tipo: 'sem-extrato' }
   if (!response.ok) throw new Error(`GET /v1/home failed with ${response.status}`)
   return { tipo: 'pronto', dados: (await response.json()) as HomeData }
 }
@@ -198,4 +202,41 @@ export async function enviarMensagem(conversaId: string, texto: string): Promise
   })
   if (!response.ok) throw new Error(`POST mensagens failed with ${response.status}`)
   return (await response.json()) as RespostaCopiloto
+}
+
+/** A request the API refused with a message meant for the person. */
+export class RecusaDaApi extends Error {}
+
+async function detalhe(response: Response, padrao: string): Promise<string> {
+  try {
+    const corpo = (await response.json()) as { detail?: unknown }
+    return typeof corpo.detail === 'string' ? corpo.detail : padrao
+  } catch {
+    return padrao
+  }
+}
+
+export async function cadastrar(nome: string, email: string, senha: string): Promise<void> {
+  const response = await fetch('/api/v1/contas', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nome, email, senha }),
+  })
+  if (response.status === 422) {
+    throw new RecusaDaApi('Confira os dados: a senha precisa ter pelo menos 12 caracteres.')
+  }
+  if (!response.ok) throw new RecusaDaApi(await detalhe(response, 'Não foi possível criar a conta.'))
+}
+
+export async function login(email: string, senha: string): Promise<void> {
+  const response = await fetch('/api/v1/sessoes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, senha }),
+  })
+  if (!response.ok) throw new RecusaDaApi(await detalhe(response, 'Não foi possível entrar.'))
+}
+
+export async function logout(): Promise<void> {
+  await fetch('/api/v1/sessoes', { method: 'DELETE' })
 }

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, Request
@@ -7,6 +7,8 @@ from fastapi import HTTPException, Request
 from agentes import LLMClient, ModeloIndisponivel, RecusaDoModelo
 from agentes.anthropic_llm import AnthropicLLM
 from agentes.categorizacao import categorizar_restantes
+from api.auditoria import LLMAuditado
+from api.banco import Conta, EventoAuditoria, criar_engine, fabrica_de_sessoes
 from api.config import Config
 from extrato.categorizacao import OUTROS, pela_regra
 from extrato.orcamento import ResumoOrcamento, TransacaoBruta, resumir_orcamento
@@ -25,11 +27,15 @@ class TransacaoCategorizada:
     """regra or llm."""
 
 
+SEM_EXTRATO = "Conecte seu banco ou importe seu extrato."
+
+
 @dataclass
 class Contexto:
-    """What the routes share: configuration, demo data and in-memory storage.
+    """What the routes share: configuration, persistence, demo data and caches.
 
-    Storage is in memory until accounts and Postgres arrive (ticket 12).
+    Accounts and the audit log live in the database; Simulações and conversations are still
+    kept in memory, keyed by account.
     """
 
     config: Config
@@ -39,16 +45,48 @@ class Contexto:
     _llm: LLMClient | None = None
     _categorizados: dict[str, list[TransacaoCategorizada]] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        self.banco = fabrica_de_sessoes(criar_engine(self.config.database_url))
+
     def llm(self) -> LLMClient:
         if self._llm is None:
             self._llm = self.config.llm or AnthropicLLM()
         return self._llm
 
+    def llm_da_conta(self, conta_id: str) -> LLMClient:
+        return LLMAuditado(self.llm(), lambda tipo: self.auditar(conta_id, tipo))
+
+    def auditar(self, conta_id: str, tipo: str, detalhe: dict[str, Any] | None = None) -> None:
+        with self.banco.begin() as db:
+            db.add(
+                EventoAuditoria(
+                    conta_id=conta_id, tipo=tipo, detalhe=detalhe, criado_em=self.config.agora()
+                )
+            )
+
+    def conta_da_sessao(self, request: Request) -> Conta:
+        conta_id = request.session.get("conta_id")
+        conta = None
+        if conta_id:
+            with self.banco() as db:
+                conta = db.get(Conta, conta_id)
+        if conta is None:
+            raise HTTPException(status_code=401, detail="Entre na sua conta primeiro.")
+        return conta
+
     def persona_da_sessao(self, request: Request) -> str:
-        persona_id = request.session.get("persona_id")
-        if persona_id not in self.personas:
-            raise HTTPException(status_code=401, detail="Entre como uma Persona primeiro.")
-        return str(persona_id)
+        """The Extrato source of the logged-in account (a Persona, for now)."""
+        conta = self.conta_da_sessao(request)
+        if conta.persona_id is None:
+            raise HTTPException(status_code=409, detail=SEM_EXTRATO)
+        return conta.persona_id
+
+    def reautenticado(self, request: Request) -> bool:
+        marca = request.session.get("reautenticado_em")
+        if not marca:
+            return False
+        janela = timedelta(minutes=self.config.minutos_de_reautenticacao)
+        return self.config.agora() - datetime.fromisoformat(marca) <= janela
 
     def mercado(self) -> tuple[SnapshotTaxas, ProjecoesFocus, SnapshotMercado]:
         taxas = RepositorioSnapshots(self.config.diretorio_mercado).mais_recente()
@@ -86,7 +124,9 @@ class Contexto:
             self.extrato(persona_id).transacoes, self.config.margem_segura_percentual
         )
 
-    def extrato_categorizado(self, persona_id: str) -> list[TransacaoCategorizada]:
+    def extrato_categorizado(
+        self, persona_id: str, llm: LLMClient | None = None
+    ) -> list[TransacaoCategorizada]:
         """Rules first; what they miss goes to the model once per Persona.
 
         When the model is unavailable the rest stays in Outros and nothing is cached,
@@ -103,7 +143,7 @@ class Contexto:
         ]
         try:
             do_modelo = categorizar_restantes(
-                self.llm(), restantes, [self.personas[persona_id].nome]
+                llm or self.llm(), restantes, [self.personas[persona_id].nome]
             )
             guardar = True
         except (ModeloIndisponivel, RecusaDoModelo):

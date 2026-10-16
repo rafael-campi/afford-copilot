@@ -56,9 +56,9 @@ SUGESTOES = [
 ]
 
 
-def _gastos_por_categoria(ctx: Contexto, persona_id: str) -> list[GastoCategoria]:
+def _gastos_por_categoria(ctx: Contexto, persona_id: str, conta_id: str) -> list[GastoCategoria]:
     """Monthly average spending per category, largest first."""
-    categorizados = ctx.extrato_categorizado(persona_id)
+    categorizados = ctx.extrato_categorizado(persona_id, ctx.llm_da_conta(conta_id))
     meses = len({(c.transacao.data.year, c.transacao.data.month) for c in categorizados}) or 1
     totais: dict[str, int] = defaultdict(int)
     for c in categorizados:
@@ -86,7 +86,9 @@ def router(ctx: Contexto) -> APIRouter:
                 margem_segura_centavos=resumo.margem_segura_centavos,
                 margem_acima_da_sobra=resumo.margem_acima_da_sobra,
             ),
-            gastos_por_categoria=_gastos_por_categoria(ctx, persona_id),
+            gastos_por_categoria=_gastos_por_categoria(
+                ctx, persona_id, ctx.conta_da_sessao(request).id
+            ),
             sugestoes=SUGESTOES,
         )
 
@@ -102,7 +104,9 @@ def router(ctx: Contexto) -> APIRouter:
                     categoria=c.categoria,
                     categoria_fonte=c.fonte,
                 )
-                for c in ctx.extrato_categorizado(persona_id)
+                for c in ctx.extrato_categorizado(
+                    persona_id, ctx.llm_da_conta(ctx.conta_da_sessao(request).id)
+                )
             ]
         )
 

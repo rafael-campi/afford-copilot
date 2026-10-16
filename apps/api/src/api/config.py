@@ -1,8 +1,10 @@
 import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
+
+from argon2 import PasswordHasher
 
 from agentes import LLMClient
 
@@ -28,6 +30,13 @@ class Config:
     dias_ate_desatualizar: int = 30
     """BCB publishes each weekly period with a lag; past this many days it is stale."""
     hoje: Callable[[], date] = date.today
+    agora: Callable[[], datetime] = lambda: datetime.now(UTC)
+    database_url: str = field(
+        default_factory=lambda: os.environ.get("DATABASE_URL", "sqlite+pysqlite:///:memory:")
+    )
+    minutos_de_reautenticacao: int = 5
+    hasher: PasswordHasher = field(default_factory=PasswordHasher)
+    """argon2id with the library's recommended parameters."""
     llm: LLMClient | None = None
     """None builds the Claude adapter on first use."""
     session_secret: str = field(

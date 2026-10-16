@@ -11,10 +11,12 @@ type Props = {
   estado: EstadoHome
   onEnviar: (texto: string) => void
   onFormulario: () => void
+  onSair: () => void
 }
 
-export function Home({ estado, onEnviar, onFormulario }: Props) {
+export function Home({ estado, onEnviar, onFormulario, onSair }: Props) {
   const [pedido, setPedido] = useState('')
+  const [menu, setMenu] = useState(false)
   const [hora] = useState(() => new Date().getHours())
 
   return (
@@ -26,13 +28,28 @@ export function Home({ estado, onEnviar, onFormulario }: Props) {
             {estado.tipo === 'pronto' ? estado.dados.nome : ' '}
           </span>
         </div>
-        <button type="button" className="icon-button" aria-label="Perfil">
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
-          </svg>
-        </button>
+        <div className="perfil">
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Perfil"
+            aria-expanded={menu}
+            onClick={() => setMenu((aberto) => !aberto)}
+          >
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
+            </svg>
+          </button>
+          {menu && (
+            <div className="perfil-menu">
+              <button type="button" className="link-button" onClick={onSair}>
+                Sair
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       <Resumo estado={estado} />
