@@ -38,6 +38,7 @@ class Contexto:
         return taxas, SnapshotMercado(
             id=taxas.id,
             financiamento_taxa_mensal=taxas.taxa_mediana_mensal,
+            tarifas_centavos=self.config.tarifas_centavos,
             desatualizado=idade > self.config.dias_ate_desatualizar,
         )
 

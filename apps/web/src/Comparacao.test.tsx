@@ -14,6 +14,10 @@ function simulacao(duracao: number, parcela: number, total: number, acima: boole
       parcela_centavos: parcela,
       custo_total_centavos: total,
       juros_centavos: total - 8_000_000,
+      iof_centavos: 267_310,
+      tarifas_centavos: 105_000,
+      cet_mensal_percentual: '1.95',
+      cet_anual_percentual: '26.08',
       taxa_mensal: '0.018',
       acima_da_margem: acima,
       duracoes_disponiveis: [48, 60, 72],
@@ -112,6 +116,22 @@ describe('Comparação', () => {
     await userEvent.click(screen.getByText('Ver taxas de 2 instituições'))
     expect(screen.getByRole('row', { name: /BCO MERCEDES-BENZ S\.A\.\s*0,55%/ })).toBeVisible()
     expect(screen.getByRole('row', { name: /OMNI SA CFI\s*3,32%/ })).toBeVisible()
+  })
+
+  it('shows the estimated CET and what it is made of', async () => {
+    fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/simulacoes': () => json(simulacao(72, 199_114, 14_708_518, false), 201),
+    })
+
+    render(<App />)
+    await preencherObjetivo()
+
+    const card = await screen.findByRole('article', { name: 'Financiamento' })
+    expect(card).toHaveTextContent('CET estimado: 26,08% ao ano (1,95% ao mês)')
+    expect(screen.getByRole('row', { name: /Juros\s*R\$\s67\.085/ })).toBeInTheDocument()
+    expect(screen.getByRole('row', { name: /IOF\s*R\$\s2\.673/ })).toBeInTheDocument()
+    expect(screen.getByRole('row', { name: /Tarifas\s*R\$\s1\.050/ })).toBeInTheDocument()
   })
 
   it('explains when the API rejects the Objetivo', async () => {

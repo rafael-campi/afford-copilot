@@ -22,6 +22,8 @@ class SnapshotMercado:
     id: str
     financiamento_taxa_mensal: Decimal
     financiamento_duracoes_meses: tuple[int, ...] = tuple(range(12, 73, 6))
+    tarifas_centavos: int = 0
+    """Registration and fee costs of a financing, paid up front (estimated values)."""
     desatualizado: bool = False
     """True when the newest data available is older than its expected refresh."""
 
@@ -37,7 +39,12 @@ class Financiamento:
     duracao_meses: int
     parcela_centavos: int
     custo_total_centavos: int
+    """Entrada + all payments + IOF + fees."""
     juros_centavos: int
+    iof_centavos: int
+    tarifas_centavos: int
+    cet_mensal_percentual: Decimal
+    cet_anual_percentual: Decimal
     acima_da_margem: bool
     ressalvas: tuple[Ressalva, ...]
 

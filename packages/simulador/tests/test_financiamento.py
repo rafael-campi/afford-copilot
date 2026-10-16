@@ -28,7 +28,7 @@ def test_payment_follows_tabela_price(valor: int, taxa: str, duracao: int, parce
     assert simulacao.financiamento.duracao_meses == duracao
 
 
-def test_total_cost_is_entrada_plus_all_payments_and_interest_is_the_difference() -> None:
+def test_interest_is_all_payments_minus_the_financed_amount() -> None:
     objetivo = Objetivo(
         item="carro", valor_centavos=1_100_000, prazo_meses=60, entrada_centavos=100_000
     )
@@ -36,7 +36,6 @@ def test_total_cost_is_entrada_plus_all_payments_and_interest_is_the_difference(
     financiamento = simular(objetivo, SEM_LIMITE, mercado("0.01"), duracao_meses=12).financiamento
 
     assert financiamento.parcela_centavos == 88_849
-    assert financiamento.custo_total_centavos == 1_166_188
     assert financiamento.juros_centavos == 66_188
 
 
@@ -89,7 +88,7 @@ def test_financing_always_warns_that_the_rate_is_an_average() -> None:
 
     financiamento = simular(objetivo, BRUNO, mercado("0.018")).financiamento
 
-    assert [r.codigo for r in financiamento.ressalvas] == ["taxa_media"]
+    assert [r.codigo for r in financiamento.ressalvas] == ["taxa_media", "cet_estimado"]
 
 
 def test_a_stale_market_snapshot_adds_a_ressalva() -> None:
@@ -100,4 +99,8 @@ def test_a_stale_market_snapshot_adds_a_ressalva() -> None:
 
     financiamento = simular(objetivo, BRUNO, antigo).financiamento
 
-    assert [r.codigo for r in financiamento.ressalvas] == ["taxa_media", "dados_desatualizados"]
+    assert [r.codigo for r in financiamento.ressalvas] == [
+        "taxa_media",
+        "cet_estimado",
+        "dados_desatualizados",
+    ]

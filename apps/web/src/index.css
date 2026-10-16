@@ -495,3 +495,40 @@ input {
 .nota a {
   color: var(--primary);
 }
+
+.cet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cet-titulo {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cet-partes {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.cet-partes caption {
+  text-align: left;
+  color: var(--muted);
+  padding-bottom: 4px;
+}
+
+.cet-partes th,
+.cet-partes td {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--divider);
+  font-weight: 400;
+  text-align: left;
+}
+
+.cet-partes td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

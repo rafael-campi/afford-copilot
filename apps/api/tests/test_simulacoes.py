@@ -9,7 +9,6 @@ from api.main import create_app
 NUMEROS = (
     "duracao_meses",
     "parcela_centavos",
-    "custo_total_centavos",
     "juros_centavos",
     "taxa_mensal",
     "acima_da_margem",
@@ -37,7 +36,6 @@ def test_simulates_financing_within_the_personas_margem_segura() -> None:
     assert {k: financiamento[k] for k in NUMEROS} == {
         "duracao_meses": 72,
         "parcela_centavos": 199_114,
-        "custo_total_centavos": 14_336_208,
         "juros_centavos": 6_336_208,
         "taxa_mensal": "0.018",
         "acima_da_margem": False,
@@ -133,7 +131,7 @@ def test_financing_shows_the_institutions_ranking_and_its_source() -> None:
         "fim_periodo": "2026-09-30",
         "url": "https://www.bcb.gov.br/estatisticas/txjuros",
     }
-    assert [r["codigo"] for r in financiamento["ressalvas"]] == ["taxa_media"]
+    assert [r["codigo"] for r in financiamento["ressalvas"]] == ["taxa_media", "cet_estimado"]
     assert "perfil de crédito" in financiamento["ressalvas"][0]["texto"]
 
 
@@ -146,6 +144,7 @@ def test_a_snapshot_older_than_30_days_past_its_period_is_flagged() -> None:
 
     assert [r["codigo"] for r in financiamento["ressalvas"]] == [
         "taxa_media",
+        "cet_estimado",
         "dados_desatualizados",
     ]
 
@@ -156,3 +155,20 @@ def test_without_any_market_snapshot_simulation_is_unavailable(tmp_path: Path) -
     response = http.post("/v1/simulacoes", json=CARRO_80_MIL)
 
     assert response.status_code == 503
+
+
+def test_financing_shows_the_estimated_cet_and_its_parts() -> None:
+    http = sessao("bruno", TestClient(create_app(config_de_teste(tarifas_centavos=105_000))))
+
+    financiamento = http.post("/v1/simulacoes", json=CARRO_80_MIL).json()["financiamento"]
+
+    assert financiamento["tarifas_centavos"] == 105_000
+    assert financiamento["iof_centavos"] > 0.0038 * 8_000_000
+    assert financiamento["custo_total_centavos"] == (
+        72 * 199_114 + financiamento["iof_centavos"] + 105_000
+    )
+    assert float(financiamento["cet_mensal_percentual"]) > 1.80
+    assert (
+        float(financiamento["cet_anual_percentual"])
+        > float(financiamento["cet_mensal_percentual"]) * 12
+    )

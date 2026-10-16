@@ -16,6 +16,8 @@ class Config:
             os.environ.get("AFFORD_MERCADO_DIR", RAIZ / "data" / "mercado" / "snapshots")
         )
     )
+    tarifas_centavos: int = 105_000
+    """Estimated tarifa de cadastro (R$ 800) plus registro de contrato (R$ 250)."""
     dias_ate_desatualizar: int = 30
     """BCB publishes each weekly period with a lag; past this many days it is stale."""
     hoje: Callable[[], date] = date.today

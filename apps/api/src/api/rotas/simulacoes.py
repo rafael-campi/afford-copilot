@@ -53,6 +53,10 @@ class FinanciamentoOut(BaseModel):
     parcela_centavos: int
     custo_total_centavos: int
     juros_centavos: int
+    iof_centavos: int
+    tarifas_centavos: int
+    cet_mensal_percentual: Decimal
+    cet_anual_percentual: Decimal
     taxa_mensal: Decimal
     acima_da_margem: bool
     duracoes_disponiveis: list[int]
@@ -112,6 +116,10 @@ def router(ctx: Contexto) -> APIRouter:
                 parcela_centavos=f.parcela_centavos,
                 custo_total_centavos=f.custo_total_centavos,
                 juros_centavos=f.juros_centavos,
+                iof_centavos=f.iof_centavos,
+                tarifas_centavos=f.tarifas_centavos,
+                cet_mensal_percentual=f.cet_mensal_percentual,
+                cet_anual_percentual=f.cet_anual_percentual,
                 taxa_mensal=mercado.financiamento_taxa_mensal,
                 acima_da_margem=f.acima_da_margem,
                 duracoes_disponiveis=sorted(mercado.financiamento_duracoes_meses),

@@ -67,6 +67,29 @@ export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onDu
           Você pagaria cerca de {formatarReais(f.juros_centavos)} só de juros, com a taxa mediana
           do mercado de {formatarPercentual(String(Number(f.taxa_mensal) * 100))} ao mês.
         </p>
+        <div className="cet">
+          <p className="cet-titulo">
+            CET estimado: {formatarPercentual(f.cet_anual_percentual)} ao ano (
+            {formatarPercentual(f.cet_mensal_percentual)} ao mês)
+          </p>
+          <table className="cet-partes">
+            <caption>Quanto você paga além do valor financiado</caption>
+            <tbody>
+              <tr>
+                <th scope="row">Juros</th>
+                <td>{formatarReais(f.juros_centavos)}</td>
+              </tr>
+              <tr>
+                <th scope="row">IOF</th>
+                <td>{formatarReais(f.iof_centavos)}</td>
+              </tr>
+              <tr>
+                <th scope="row">Tarifas</th>
+                <td>{formatarReais(f.tarifas_centavos)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         {f.ressalvas.length > 0 && (
           <ul className="ressalvas">
             {f.ressalvas.map((r) => (
