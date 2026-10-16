@@ -71,6 +71,7 @@ source = { editable = "apps/api" }
 dependencies = [
     { name = "afford-extrato" },
     { name = "afford-seed" },
+    { name = "afford-simulador" },
     { name = "fastapi" },
     { name = "itsdangerous" },
     { name = "uvicorn", extra = ["standard"] },
@@ -80,6 +81,7 @@ dependencies = [
 requires-dist = [
     { name = "afford-extrato", editable = "packages/extrato" },
     { name = "afford-seed", editable = "packages/seed" },
+    { name = "afford-simulador", editable = "packages/simulador" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "itsdangerous", specifier = ">=2.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.32" },

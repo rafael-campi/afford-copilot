@@ -7,7 +7,7 @@ export type EstadoHome =
   | { tipo: 'erro' }
   | { tipo: 'pronto'; dados: HomeData }
 
-export function Home({ estado }: { estado: EstadoHome }) {
+export function Home({ estado, onAnalisar }: { estado: EstadoHome; onAnalisar: () => void }) {
   const [pedido, setPedido] = useState('')
   const [hora] = useState(() => new Date().getHours())
 
@@ -34,7 +34,13 @@ export function Home({ estado }: { estado: EstadoHome }) {
         <RessalvaMargem resumo={estado.dados.resumo} />
       )}
 
-      <form className="objetivo" onSubmit={(event) => event.preventDefault()}>
+      <form
+        className="objetivo"
+        onSubmit={(event) => {
+          event.preventDefault()
+          onAnalisar()
+        }}
+      >
         <label htmlFor="pedido" className="objetivo-label">
           O que você quer conquistar?
         </label>

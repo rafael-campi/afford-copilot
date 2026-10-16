@@ -47,3 +47,41 @@ export async function entrarComo(personaId: string): Promise<void> {
   })
   if (!response.ok) throw new Error(`POST /v1/sessoes/demo failed with ${response.status}`)
 }
+
+export type NovaSimulacao = {
+  item: string
+  valor_centavos: number
+  prazo_meses: number
+  entrada_centavos: number
+  duracao_meses?: number
+}
+
+export type Financiamento = {
+  duracao_meses: number
+  parcela_centavos: number
+  custo_total_centavos: number
+  juros_centavos: number
+  taxa_mensal: string
+  acima_da_margem: boolean
+  duracoes_disponiveis: number[]
+}
+
+export type Simulacao = {
+  id: string
+  snapshot_id: string
+  objetivo: Omit<NovaSimulacao, 'duracao_meses'>
+  financiamento: Financiamento
+}
+
+export class ObjetivoInvalido extends Error {}
+
+export async function criarSimulacao(dados: NovaSimulacao): Promise<Simulacao> {
+  const response = await fetch('/api/v1/simulacoes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dados),
+  })
+  if (response.status === 422) throw new ObjetivoInvalido()
+  if (!response.ok) throw new Error(`POST /v1/simulacoes failed with ${response.status}`)
+  return (await response.json()) as Simulacao
+}
