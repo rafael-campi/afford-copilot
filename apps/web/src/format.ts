@@ -30,3 +30,10 @@ export function formatarData(iso: string): string {
 export function formatarPercentual(texto: string): string {
   return `${Number(texto).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
 }
+
+const FEMININOS = new Set(['moto', 'motocicleta', 'caminhonete', 'picape', 'van', 'bicicleta', 'scooter'])
+
+/** "do carro", "da moto". */
+export function doItem(item: string): string {
+  return `${FEMININOS.has(item) ? 'da' : 'do'} ${item}`
+}

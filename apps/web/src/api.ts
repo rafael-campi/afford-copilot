@@ -174,6 +174,7 @@ export type RespostaCopiloto = {
   resposta: string
   objetivo: ObjetivoConversa
   faltando: string[]
+  novo_objetivo: boolean
   simulacao: Simulacao | null
 }
 

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import type { ObjetivoConversa } from './api'
+import type { ObjetivoConversa, Simulacao } from './api'
 import { formatarReais } from './format'
 
 export type Mensagem = { autor: 'pessoa' | 'copiloto'; texto: string }
@@ -7,16 +7,18 @@ export type Mensagem = { autor: 'pessoa' | 'copiloto'; texto: string }
 type Props = {
   mensagens: Mensagem[]
   objetivo: ObjetivoConversa | null
-  podeComparar: boolean
+  cenarios: Simulacao[]
   enviando: boolean
   erro: string | null
   onEnviar: (texto: string) => void
   onComparar: () => void
+  onVerCenario: (indice: number) => void
   onVoltar: () => void
 }
 
 export function Conversa(props: Props) {
-  const { mensagens, objetivo, podeComparar, enviando, erro, onEnviar, onComparar, onVoltar } = props
+  const { mensagens, objetivo, cenarios, enviando, erro, onEnviar, onComparar, onVerCenario, onVoltar } =
+    props
   const [texto, setTexto] = useState('')
 
   function enviar(event: FormEvent) {
@@ -53,7 +55,9 @@ export function Conversa(props: Props) {
         </p>
       )}
 
-      {podeComparar && (
+      {cenarios.length > 1 && <Cenarios cenarios={cenarios} onVer={onVerCenario} />}
+
+      {cenarios.length > 0 && (
         <button type="button" className="primary-button" onClick={onComparar}>
           Comparar as 3 opções
         </button>
@@ -88,6 +92,38 @@ function ChipsObjetivo({ objetivo }: { objetivo: ObjetivoConversa }) {
           ? `Entrada de ${formatarReais(objetivo.entrada_centavos)}`
           : 'sem Entrada'}
       </li>
+    </ul>
+  )
+}
+
+const NOMES_CAMINHO: Record<string, string> = {
+  financiamento: 'financiamento',
+  consorcio: 'consórcio',
+  juntar: 'juntar',
+}
+
+function Cenarios({ cenarios, onVer }: { cenarios: Simulacao[]; onVer: (indice: number) => void }) {
+  return (
+    <ul className="cenarios" aria-label="Cenários desta conversa">
+      {cenarios.map((s, i) => {
+        const entrada =
+          s.objetivo.entrada_centavos > 0
+            ? `Entrada de ${formatarReais(s.objetivo.entrada_centavos)}`
+            : 'sem Entrada'
+        const caminho = s.recomendacao.caminho
+        return (
+          <li key={s.id} className="cenario">
+            <span>
+              Cenário {i + 1}: {entrada} · recomendado:{' '}
+              {caminho ? NOMES_CAMINHO[caminho] : 'nenhum'}
+            </span>
+            <button type="button" className="link-button" onClick={() => onVer(i)}>
+              <span className="visualmente-oculto">Ver cenário {i + 1}</span>
+              <span aria-hidden="true">Ver</span>
+            </button>
+          </li>
+        )
+      })}
     </ul>
   )
 }
