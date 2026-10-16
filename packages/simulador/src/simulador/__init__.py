@@ -4,6 +4,7 @@ from simulador.modelo import (
     Financiamento,
     Objetivo,
     Orcamento,
+    Ressalva,
     Simulacao,
     SnapshotMercado,
 )
@@ -13,6 +14,7 @@ __all__ = [
     "Financiamento",
     "Objetivo",
     "Orcamento",
+    "Ressalva",
     "Simulacao",
     "SnapshotMercado",
     "simular",

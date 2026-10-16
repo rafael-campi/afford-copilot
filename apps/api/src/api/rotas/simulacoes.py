@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, HTTPException, Request
@@ -29,6 +30,24 @@ class ObjetivoOut(BaseModel):
     entrada_centavos: int
 
 
+class TaxaOut(BaseModel):
+    instituicao: str
+    taxa_mensal_percentual: Decimal
+    taxa_anual_percentual: Decimal
+
+
+class FonteOut(BaseModel):
+    descricao: str
+    inicio_periodo: date
+    fim_periodo: date
+    url: str
+
+
+class RessalvaOut(BaseModel):
+    codigo: str
+    texto: str
+
+
 class FinanciamentoOut(BaseModel):
     duracao_meses: int
     parcela_centavos: int
@@ -37,6 +56,9 @@ class FinanciamentoOut(BaseModel):
     taxa_mensal: Decimal
     acima_da_margem: bool
     duracoes_disponiveis: list[int]
+    ranking: list[TaxaOut]
+    fonte: FonteOut
+    ressalvas: list[RessalvaOut]
 
 
 class SimulacaoOut(BaseModel):
@@ -46,13 +68,16 @@ class SimulacaoOut(BaseModel):
     financiamento: FinanciamentoOut
 
 
+FONTE_BCB = "Banco Central do Brasil: taxas médias de aquisição de veículos (pessoa física)"
+
+
 def router(ctx: Contexto) -> APIRouter:
     rotas = APIRouter()
 
     @rotas.post("/v1/simulacoes", status_code=201)
     def criar(dados: NovaSimulacao, request: Request) -> SimulacaoOut:
         persona_id = ctx.persona_da_sessao(request)
-        mercado = ctx.config.mercado
+        taxas, mercado = ctx.mercado()
         if (
             dados.duracao_meses is not None
             and dados.duracao_meses not in mercado.financiamento_duracoes_meses
@@ -90,6 +115,21 @@ def router(ctx: Contexto) -> APIRouter:
                 taxa_mensal=mercado.financiamento_taxa_mensal,
                 acima_da_margem=f.acima_da_margem,
                 duracoes_disponiveis=sorted(mercado.financiamento_duracoes_meses),
+                ranking=[
+                    TaxaOut(
+                        instituicao=t.instituicao,
+                        taxa_mensal_percentual=t.taxa_mensal_percentual,
+                        taxa_anual_percentual=t.taxa_anual_percentual,
+                    )
+                    for t in sorted(taxas.taxas, key=lambda t: t.posicao)
+                ],
+                fonte=FonteOut(
+                    descricao=FONTE_BCB,
+                    inicio_periodo=taxas.inicio_periodo,
+                    fim_periodo=taxas.fim_periodo,
+                    url="https://www.bcb.gov.br/estatisticas/txjuros",
+                ),
+                ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in f.ressalvas],
             ),
         )
         ctx.simulacoes[saida.id] = (persona_id, saida)

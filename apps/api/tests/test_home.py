@@ -1,12 +1,12 @@
 import pytest
+from apoio import config_de_teste
 from fastapi.testclient import TestClient
 
-from api.config import Config
 from api.main import create_app
 
 
 def client() -> TestClient:
-    return TestClient(create_app())
+    return TestClient(create_app(config_de_teste()))
 
 
 def entrar_como(persona_id: str, http: TestClient | None = None) -> TestClient:
@@ -67,7 +67,7 @@ def test_entering_as_an_unknown_persona_is_rejected() -> None:
 
 
 def test_margem_segura_percentual_is_configurable() -> None:
-    http = TestClient(create_app(Config(margem_segura_percentual=25)))
+    http = TestClient(create_app(config_de_teste(margem_segura_percentual=25)))
 
     resumo = entrar_como("bruno", http).get("/v1/home").json()["resumo"]
 

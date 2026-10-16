@@ -1,0 +1,11 @@
+{
+ "id": "bcb-veiculos-pf-2026-09-24",
+ "inicio_periodo": "2026-09-24",
+ "fim_periodo": "2026-09-30",
+ "capturado_em": "2026-10-15T12:00:00+00:00",
+ "taxas": [
+  {"posicao": 1, "instituicao": "BANCO ALFA", "cnpj8": "00000001", "taxa_mensal_percentual": "1.20", "taxa_anual_percentual": "15.39"},
+  {"posicao": 2, "instituicao": "BANCO BETA", "cnpj8": "00000002", "taxa_mensal_percentual": "1.80", "taxa_anual_percentual": "23.87"},
+  {"posicao": 3, "instituicao": "BANCO GAMA", "cnpj8": "00000003", "taxa_mensal_percentual": "2.40", "taxa_anual_percentual": "32.92"}
+ ]
+}

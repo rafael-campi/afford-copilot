@@ -24,6 +24,7 @@ services:
       dockerfile: infra/docker/api.Dockerfile
     environment:
       DATABASE_URL: postgresql://afford:afford@db:5432/afford
+      AFFORD_MERCADO_DIR: /app/data/mercado/snapshots
     ports:
       - "8000:8000"
     depends_on:

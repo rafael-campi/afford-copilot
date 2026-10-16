@@ -1,6 +1,25 @@
 from decimal import ROUND_HALF_UP, Decimal
 
-from simulador.modelo import Financiamento, Objetivo, Orcamento, Simulacao, SnapshotMercado
+from simulador.modelo import (
+    Financiamento,
+    Objetivo,
+    Orcamento,
+    Ressalva,
+    Simulacao,
+    SnapshotMercado,
+)
+
+TAXA_MEDIA = Ressalva(
+    codigo="taxa_media",
+    texto=(
+        "A taxa é a média que as instituições informaram ao Banco Central. "
+        "A sua depende do seu perfil de crédito."
+    ),
+)
+DADOS_DESATUALIZADOS = Ressalva(
+    codigo="dados_desatualizados",
+    texto="Os dados de mercado mais recentes disponíveis estão desatualizados.",
+)
 
 
 def parcela_price(valor_centavos: int, taxa_mensal: Decimal, duracao_meses: int) -> int:
@@ -21,6 +40,12 @@ def _menor_duracao_que_cabe(
         if parcela_price(financiado, taxa, duracao) <= orcamento.margem_segura_centavos:
             return duracao
     return max(duracoes)
+
+
+def _ressalvas(mercado: SnapshotMercado) -> tuple[Ressalva, ...]:
+    if mercado.desatualizado:
+        return (TAXA_MEDIA, DADOS_DESATUALIZADOS)
+    return (TAXA_MEDIA,)
 
 
 def simular(
@@ -45,5 +70,8 @@ def simular(
             custo_total_centavos=objetivo.entrada_centavos + parcela * duracao_meses,
             juros_centavos=parcela * duracao_meses - financiado,
             acima_da_margem=parcela > orcamento.margem_segura_centavos,
+            ressalvas=(TAXA_MEDIA, DADOS_DESATUALIZADOS)
+            if mercado.desatualizado
+            else (TAXA_MEDIA,),
         ),
     )

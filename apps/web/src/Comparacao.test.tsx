@@ -17,6 +17,22 @@ function simulacao(duracao: number, parcela: number, total: number, acima: boole
       taxa_mensal: '0.018',
       acima_da_margem: acima,
       duracoes_disponiveis: [48, 60, 72],
+      ranking: [
+        { instituicao: 'BCO MERCEDES-BENZ S.A.', taxa_mensal_percentual: '0.55', taxa_anual_percentual: '6.85' },
+        { instituicao: 'OMNI SA CFI', taxa_mensal_percentual: '3.32', taxa_anual_percentual: '48.0' },
+      ],
+      fonte: {
+        descricao: 'Banco Central do Brasil: taxas médias de aquisição de veículos (pessoa física)',
+        inicio_periodo: '2026-09-24',
+        fim_periodo: '2026-09-30',
+        url: 'https://www.bcb.gov.br/estatisticas/txjuros',
+      },
+      ressalvas: [
+        {
+          codigo: 'taxa_media',
+          texto: 'A taxa é a média que as instituições informaram ao Banco Central. A sua depende do seu perfil de crédito.',
+        },
+      ],
     },
   }
 }
@@ -79,6 +95,23 @@ describe('Comparação', () => {
     expect(fetchMock).toHaveBeenLastCalledWith('/api/v1/simulacoes', expect.objectContaining({
       body: expect.stringContaining('"duracao_meses":60'),
     }))
+  })
+
+  it('shows the Ressalvas, the source period and the institutions ranking', async () => {
+    fakeApi({
+      'GET /api/v1/home': () => json(homeBruno),
+      'POST /api/v1/simulacoes': () => json(simulacao(72, 199_114, 14_336_208, false), 201),
+    })
+
+    render(<App />)
+    await preencherObjetivo()
+
+    const card = await screen.findByRole('article', { name: 'Financiamento' })
+    expect(card).toHaveTextContent('A sua depende do seu perfil de crédito.')
+    expect(card).toHaveTextContent('Fonte: Banco Central do Brasil, 24/09/2026 a 30/09/2026')
+    await userEvent.click(screen.getByText('Ver taxas de 2 instituições'))
+    expect(screen.getByRole('row', { name: /BCO MERCEDES-BENZ S\.A\.\s*0,55%/ })).toBeVisible()
+    expect(screen.getByRole('row', { name: /OMNI SA CFI\s*3,32%/ })).toBeVisible()
   })
 
   it('explains when the API rejects the Objetivo', async () => {

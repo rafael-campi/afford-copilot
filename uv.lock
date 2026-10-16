@@ -70,6 +70,7 @@ version = "0.1.0"
 source = { editable = "apps/api" }
 dependencies = [
     { name = "afford-extrato" },
+    { name = "afford-mercado" },
     { name = "afford-seed" },
     { name = "afford-simulador" },
     { name = "fastapi" },
@@ -80,6 +81,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "afford-extrato", editable = "packages/extrato" },
+    { name = "afford-mercado", editable = "packages/mercado" },
     { name = "afford-seed", editable = "packages/seed" },
     { name = "afford-simulador", editable = "packages/simulador" },
     { name = "fastapi", specifier = ">=0.115" },

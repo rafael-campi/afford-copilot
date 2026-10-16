@@ -22,6 +22,14 @@ class SnapshotMercado:
     id: str
     financiamento_taxa_mensal: Decimal
     financiamento_duracoes_meses: tuple[int, ...] = tuple(range(12, 73, 6))
+    desatualizado: bool = False
+    """True when the newest data available is older than its expected refresh."""
+
+
+@dataclass(frozen=True)
+class Ressalva:
+    codigo: str
+    texto: str
 
 
 @dataclass(frozen=True)
@@ -31,6 +39,7 @@ class Financiamento:
     custo_total_centavos: int
     juros_centavos: int
     acima_da_margem: bool
+    ressalvas: tuple[Ressalva, ...]
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,302 @@
+{
+ "id": "bcb-veiculos-pf-2026-09-24",
+ "inicio_periodo": "2026-09-24",
+ "fim_periodo": "2026-09-30",
+ "capturado_em": "2026-10-16T01:46:02.851094+00:00",
+ "taxas": [
+  {
+   "posicao": 1,
+   "instituicao": "BCO MERCEDES-BENZ S.A.",
+   "cnpj8": "60814191",
+   "taxa_mensal_percentual": "0.55",
+   "taxa_anual_percentual": "6.85"
+  },
+  {
+   "posicao": 2,
+   "instituicao": "BMW SA CFI",
+   "cnpj8": "04452473",
+   "taxa_mensal_percentual": "0.88",
+   "taxa_anual_percentual": "11.02"
+  },
+  {
+   "posicao": 3,
+   "instituicao": "BCO RCI BRASIL S.A.",
+   "cnpj8": "62307848",
+   "taxa_mensal_percentual": "0.94",
+   "taxa_anual_percentual": "11.85"
+  },
+  {
+   "posicao": 4,
+   "instituicao": "BCO STELLANTIS S.A.",
+   "cnpj8": "62237425",
+   "taxa_mensal_percentual": "0.94",
+   "taxa_anual_percentual": "11.94"
+  },
+  {
+   "posicao": 5,
+   "instituicao": "CAIXA ECONOMICA FEDERAL",
+   "cnpj8": "00360305",
+   "taxa_mensal_percentual": "1.0",
+   "taxa_anual_percentual": "12.74"
+  },
+  {
+   "posicao": 6,
+   "instituicao": "BCO DA AMAZONIA S.A.",
+   "cnpj8": "04902979",
+   "taxa_mensal_percentual": "1.09",
+   "taxa_anual_percentual": "13.93"
+  },
+  {
+   "posicao": 7,
+   "instituicao": "BCO DO BRASIL S.A.",
+   "cnpj8": "00000000",
+   "taxa_mensal_percentual": "1.11",
+   "taxa_anual_percentual": "14.19"
+  },
+  {
+   "posicao": 8,
+   "instituicao": "BANCO HYUNDAI CAPITAL BRASIL",
+   "cnpj8": "30172491",
+   "taxa_mensal_percentual": "1.16",
+   "taxa_anual_percentual": "14.87"
+  },
+  {
+   "posicao": 9,
+   "instituicao": "BCO PACCAR S.A.",
+   "cnpj8": "28517628",
+   "taxa_mensal_percentual": "1.34",
+   "taxa_anual_percentual": "17.3"
+  },
+  {
+   "posicao": 10,
+   "instituicao": "BCO GM S.A.",
+   "cnpj8": "59274605",
+   "taxa_mensal_percentual": "1.35",
+   "taxa_anual_percentual": "17.52"
+  },
+  {
+   "posicao": 11,
+   "instituicao": "BANCO TRATON BRASIL S.A.",
+   "cnpj8": "52067630",
+   "taxa_mensal_percentual": "1.41",
+   "taxa_anual_percentual": "18.23"
+  },
+  {
+   "posicao": 12,
+   "instituicao": "BANCO CNH INDUSTRIAL CAPITAL S.A",
+   "cnpj8": "02992446",
+   "taxa_mensal_percentual": "1.45",
+   "taxa_anual_percentual": "18.79"
+  },
+  {
+   "posicao": 13,
+   "instituicao": "STELLANTIS FINANCIAMENTOS CFI",
+   "cnpj8": "03502961",
+   "taxa_mensal_percentual": "1.51",
+   "taxa_anual_percentual": "19.68"
+  },
+  {
+   "posicao": 14,
+   "instituicao": "BCO BANESTES S.A.",
+   "cnpj8": "28127603",
+   "taxa_mensal_percentual": "1.54",
+   "taxa_anual_percentual": "20.09"
+  },
+  {
+   "posicao": 15,
+   "instituicao": "BCO DO EST. DO PA S.A.",
+   "cnpj8": "04913711",
+   "taxa_mensal_percentual": "1.55",
+   "taxa_anual_percentual": "20.21"
+  },
+  {
+   "posicao": 16,
+   "instituicao": "BCO VOLKSWAGEN S.A",
+   "cnpj8": "59109165",
+   "taxa_mensal_percentual": "1.57",
+   "taxa_anual_percentual": "20.48"
+  },
+  {
+   "posicao": 17,
+   "instituicao": "SAFRA SCFI S.A.",
+   "cnpj8": "45437547",
+   "taxa_mensal_percentual": "1.63",
+   "taxa_anual_percentual": "21.47"
+  },
+  {
+   "posicao": 18,
+   "instituicao": "BANCO MONEO S.A.",
+   "cnpj8": "07441209",
+   "taxa_mensal_percentual": "1.64",
+   "taxa_anual_percentual": "21.6"
+  },
+  {
+   "posicao": 19,
+   "instituicao": "BCO RODOBENS S.A.",
+   "cnpj8": "33603457",
+   "taxa_mensal_percentual": "1.68",
+   "taxa_anual_percentual": "22.1"
+  },
+  {
+   "posicao": 20,
+   "instituicao": "BCO BRADESCO S.A.",
+   "cnpj8": "60746948",
+   "taxa_mensal_percentual": "1.69",
+   "taxa_anual_percentual": "22.23"
+  },
+  {
+   "posicao": 21,
+   "instituicao": "BCO VOLVO BRASIL S.A.",
+   "cnpj8": "58017179",
+   "taxa_mensal_percentual": "1.7",
+   "taxa_anual_percentual": "22.39"
+  },
+  {
+   "posicao": 22,
+   "instituicao": "SANTANDER SCFI S.A.",
+   "cnpj8": "07707650",
+   "taxa_mensal_percentual": "1.74",
+   "taxa_anual_percentual": "23.0"
+  },
+  {
+   "posicao": 23,
+   "instituicao": "BANCO INTER",
+   "cnpj8": "00416968",
+   "taxa_mensal_percentual": "1.74",
+   "taxa_anual_percentual": "23.04"
+  },
+  {
+   "posicao": 24,
+   "instituicao": "BCO TOYOTA DO BRASIL S.A.",
+   "cnpj8": "03215790",
+   "taxa_mensal_percentual": "1.81",
+   "taxa_anual_percentual": "24.07"
+  },
+  {
+   "posicao": 25,
+   "instituicao": "CARUANA SCFI",
+   "cnpj8": "09313766",
+   "taxa_mensal_percentual": "1.84",
+   "taxa_anual_percentual": "24.52"
+  },
+  {
+   "posicao": 26,
+   "instituicao": "BRB - CFI S/A",
+   "cnpj8": "33136888",
+   "taxa_mensal_percentual": "1.89",
+   "taxa_anual_percentual": "25.22"
+  },
+  {
+   "posicao": 27,
+   "instituicao": "BCO BRADESCO FINANC. S.A.",
+   "cnpj8": "07207996",
+   "taxa_mensal_percentual": "1.91",
+   "taxa_anual_percentual": "25.46"
+  },
+  {
+   "posicao": 28,
+   "instituicao": "BCO C6 S.A.",
+   "cnpj8": "31872495",
+   "taxa_mensal_percentual": "1.93",
+   "taxa_anual_percentual": "25.71"
+  },
+  {
+   "posicao": 29,
+   "instituicao": "PORTOSEG S.A. CFI",
+   "cnpj8": "04862600",
+   "taxa_mensal_percentual": "1.93",
+   "taxa_anual_percentual": "25.76"
+  },
+  {
+   "posicao": 30,
+   "instituicao": "SINOSSERRA S/A - SCFI",
+   "cnpj8": "22639377",
+   "taxa_mensal_percentual": "1.94",
+   "taxa_anual_percentual": "25.99"
+  },
+  {
+   "posicao": 31,
+   "instituicao": "BCO DO ESTADO DO RS S.A.",
+   "cnpj8": "92702067",
+   "taxa_mensal_percentual": "1.96",
+   "taxa_anual_percentual": "26.29"
+  },
+  {
+   "posicao": 32,
+   "instituicao": "ITAÚ UNIBANCO HOLDING S.A.",
+   "cnpj8": "60872504",
+   "taxa_mensal_percentual": "1.98",
+   "taxa_anual_percentual": "26.47"
+  },
+  {
+   "posicao": 33,
+   "instituicao": "BCO BRASILEIRO DE CRÉDITO S.A.",
+   "cnpj8": "01852137",
+   "taxa_mensal_percentual": "2.0",
+   "taxa_anual_percentual": "26.8"
+  },
+  {
+   "posicao": 34,
+   "instituicao": "BCO VOTORANTIM S.A.",
+   "cnpj8": "59588111",
+   "taxa_mensal_percentual": "2.21",
+   "taxa_anual_percentual": "30.02"
+  },
+  {
+   "posicao": 35,
+   "instituicao": "BCO HONDA S.A.",
+   "cnpj8": "03634220",
+   "taxa_mensal_percentual": "2.27",
+   "taxa_anual_percentual": "30.87"
+  },
+  {
+   "posicao": 36,
+   "instituicao": "OMNI BANCO S.A.",
+   "cnpj8": "60850229",
+   "taxa_mensal_percentual": "2.48",
+   "taxa_anual_percentual": "34.15"
+  },
+  {
+   "posicao": 37,
+   "instituicao": "BCO YAMAHA MOTOR S.A.",
+   "cnpj8": "10371492",
+   "taxa_mensal_percentual": "2.59",
+   "taxa_anual_percentual": "35.96"
+  },
+  {
+   "posicao": 38,
+   "instituicao": "BANCO PAN",
+   "cnpj8": "59285411",
+   "taxa_mensal_percentual": "2.83",
+   "taxa_anual_percentual": "39.77"
+  },
+  {
+   "posicao": 39,
+   "instituicao": "AGORACRED S/A SCFI",
+   "cnpj8": "36321990",
+   "taxa_mensal_percentual": "2.86",
+   "taxa_anual_percentual": "40.3"
+  },
+  {
+   "posicao": 40,
+   "instituicao": "FINAMAX S.A. CFI",
+   "cnpj8": "00411939",
+   "taxa_mensal_percentual": "3.13",
+   "taxa_anual_percentual": "44.76"
+  },
+  {
+   "posicao": 41,
+   "instituicao": "BCO DAYCOVAL S.A",
+   "cnpj8": "62232889",
+   "taxa_mensal_percentual": "3.25",
+   "taxa_anual_percentual": "46.72"
+  },
+  {
+   "posicao": 42,
+   "instituicao": "OMNI SA CFI",
+   "cnpj8": "92228410",
+   "taxa_mensal_percentual": "3.32",
+   "taxa_anual_percentual": "47.9"
+  }
+ ]
+}

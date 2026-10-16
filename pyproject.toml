@@ -49,10 +49,11 @@ known-first-party = ["api", "simulador", "mercado", "extrato", "rag", "agentes",
 [tool.mypy]
 python_version = "3.12"
 strict = true
-mypy_path = ["apps/api/src", "packages/simulador/src", "packages/mercado/src", "packages/extrato/src", "packages/rag/src", "packages/agentes/src", "packages/seed/src"]
+mypy_path = ["apps/api/tests", "apps/api/src", "packages/simulador/src", "packages/mercado/src", "packages/extrato/src", "packages/rag/src", "packages/agentes/src", "packages/seed/src"]
 explicit_package_bases = true
 files = ["apps/api/src", "apps/api/tests", "packages"]
 
 [tool.pytest.ini_options]
 testpaths = ["apps/api/tests", "packages"]
 addopts = "--import-mode=importlib"
+pythonpath = ["apps/api/tests"]
