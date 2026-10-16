@@ -172,3 +172,38 @@ def test_financing_shows_the_estimated_cet_and_its_parts() -> None:
         float(financiamento["cet_anual_percentual"])
         > float(financiamento["cet_mensal_percentual"]) * 12
     )
+
+
+def test_simulates_the_consorcio_alongside_financing() -> None:
+    consorcio = sessao("bruno").post("/v1/simulacoes", json=CARRO_80_MIL).json()["consorcio"]
+
+    # 80,000 x 1.17 / 48 = 1,950 fits Bruno's 2,040; 36 months (2,600) would not.
+    assert consorcio["duracao_meses"] == 48
+    assert consorcio["parcela_centavos"] == 195_000
+    assert consorcio["carta_credito_centavos"] == 8_000_000
+    assert consorcio["acima_da_margem"] is False
+    assert consorcio["janela"]["melhor_caso_mes"] == 1
+    assert consorcio["janela"]["pior_caso_mes"] == 48
+    assert consorcio["janela"]["chance_ate_prazo_percentual"] == 100
+    assert consorcio["taxa_administracao_percentual"] == "15.00"
+    assert consorcio["duracoes_disponiveis"] == [36, 48, 60, 72, 80]
+    assert [r["codigo"] for r in consorcio["ressalvas"]] == [
+        "contemplacao_incerta",
+        "faixas_de_mercado",
+    ]
+
+
+def test_the_person_can_choose_the_consorcio_duracao() -> None:
+    response = sessao("bruno").post(
+        "/v1/simulacoes", json={**CARRO_80_MIL, "consorcio_duracao_meses": 60}
+    )
+
+    assert response.json()["consorcio"]["parcela_centavos"] == 156_000
+
+
+def test_rejects_a_consorcio_duracao_the_market_does_not_offer() -> None:
+    response = sessao("bruno").post(
+        "/v1/simulacoes", json={**CARRO_80_MIL, "consorcio_duracao_meses": 50}
+    )
+
+    assert response.status_code == 422

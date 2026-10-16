@@ -532,3 +532,44 @@ input {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+.janela {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.janela-titulo {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.janela-trilho {
+  position: relative;
+  height: 8px;
+  margin-inline: 7px;
+  border-radius: 4px;
+  background: var(--primary-soft);
+}
+
+.janela-trilho i {
+  position: absolute;
+  top: -3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 3px solid var(--primary);
+  transform: translateX(-50%);
+}
+
+.janela-marcos {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,15 +1,17 @@
-import type { Simulacao } from './api'
+import type { NovaSimulacao, Simulacao } from './api'
+import { CardConsorcio } from './CardConsorcio'
+import { Ressalvas } from './Ressalvas'
 import { formatarData, formatarPercentual, formatarReais } from './format'
 
 type Props = {
   simulacao: Simulacao
   margemSeguraCentavos: number
   recalculando: boolean
-  onDuracao: (duracaoMeses: number) => void
+  onMudar: (mudanca: Partial<NovaSimulacao>) => void
   onVoltar: () => void
 }
 
-export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onDuracao, onVoltar }: Props) {
+export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onMudar, onVoltar }: Props) {
   const { objetivo, financiamento: f } = simulacao
   const item = objetivo.item.charAt(0).toUpperCase() + objetivo.item.slice(1)
 
@@ -53,7 +55,7 @@ export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onDu
           <span>Duração</span>
           <select
             value={String(f.duracao_meses)}
-            onChange={(e) => onDuracao(Number(e.target.value))}
+            onChange={(e) => onMudar({ duracao_meses: Number(e.target.value) })}
             disabled={recalculando}
           >
             {f.duracoes_disponiveis.map((d) => (
@@ -90,15 +92,7 @@ export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onDu
             </tbody>
           </table>
         </div>
-        {f.ressalvas.length > 0 && (
-          <ul className="ressalvas">
-            {f.ressalvas.map((r) => (
-              <li key={r.codigo} className="ressalva">
-                {r.texto}
-              </li>
-            ))}
-          </ul>
-        )}
+        <Ressalvas ressalvas={f.ressalvas} />
         <details className="ranking">
           <summary>Ver taxas de {f.ranking.length} instituições</summary>
           <table>
@@ -126,6 +120,12 @@ export function Comparacao({ simulacao, margemSeguraCentavos, recalculando, onDu
           </a>
         </p>
       </article>
+
+      <CardConsorcio
+        consorcio={simulacao.consorcio}
+        recalculando={recalculando}
+        onDuracao={(d) => onMudar({ consorcio_duracao_meses: d })}
+      />
 
       <p className="nota">Extrato fictício. Taxas reais publicadas pelo Banco Central.</p>
     </main>

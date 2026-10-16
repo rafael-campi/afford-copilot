@@ -1,5 +1,6 @@
 from decimal import ROUND_HALF_UP, Decimal
 
+from simulador.consorcio import simular_consorcio
 from simulador.modelo import (
     Financiamento,
     Objetivo,
@@ -103,6 +104,7 @@ def simular(
     orcamento: Orcamento,
     mercado: SnapshotMercado,
     duracao_meses: int | None = None,
+    consorcio_duracao_meses: int | None = None,
 ) -> Simulacao:
     financiado = objetivo.valor_centavos - objetivo.entrada_centavos
     taxa = mercado.financiamento_taxa_mensal
@@ -117,6 +119,7 @@ def simular(
     return Simulacao(
         objetivo=objetivo,
         snapshot_id=mercado.id,
+        consorcio=simular_consorcio(objetivo, orcamento, mercado, consorcio_duracao_meses),
         financiamento=Financiamento(
             duracao_meses=duracao_meses,
             parcela_centavos=parcela,

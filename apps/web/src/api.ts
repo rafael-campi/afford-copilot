@@ -54,6 +54,7 @@ export type NovaSimulacao = {
   prazo_meses: number
   entrada_centavos: number
   duracao_meses?: number
+  consorcio_duracao_meses?: number
 }
 
 export type Financiamento = {
@@ -91,11 +92,35 @@ export type Ressalva = {
   texto: string
 }
 
+export type JanelaContemplacao = {
+  melhor_caso_mes: number
+  mediana_mes: number
+  pior_caso_mes: number
+  chance_ate_prazo_percentual: number
+}
+
+export type Consorcio = {
+  carta_credito_centavos: number
+  duracao_meses: number
+  parcela_centavos: number
+  custo_total_centavos: number
+  taxa_administracao_centavos: number
+  taxa_administracao_percentual: string
+  fundo_reserva_centavos: number
+  fundo_reserva_percentual: string
+  reajuste_anual_percentual: string
+  acima_da_margem: boolean
+  janela: JanelaContemplacao
+  duracoes_disponiveis: number[]
+  ressalvas: Ressalva[]
+}
+
 export type Simulacao = {
   id: string
   snapshot_id: string
-  objetivo: Omit<NovaSimulacao, 'duracao_meses'>
+  objetivo: Omit<NovaSimulacao, 'duracao_meses' | 'consorcio_duracao_meses'>
   financiamento: Financiamento
+  consorcio: Consorcio
 }
 
 export class ObjetivoInvalido extends Error {}

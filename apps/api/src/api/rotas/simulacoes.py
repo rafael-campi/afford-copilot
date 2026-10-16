@@ -15,6 +15,7 @@ class NovaSimulacao(BaseModel):
     prazo_meses: int = Field(ge=1)
     entrada_centavos: int = Field(default=0, ge=0)
     duracao_meses: int | None = None
+    consorcio_duracao_meses: int | None = None
 
     @model_validator(mode="after")
     def entrada_menor_que_valor(self) -> "NovaSimulacao":
@@ -65,14 +66,42 @@ class FinanciamentoOut(BaseModel):
     ressalvas: list[RessalvaOut]
 
 
+class JanelaOut(BaseModel):
+    melhor_caso_mes: int
+    mediana_mes: int
+    pior_caso_mes: int
+    chance_ate_prazo_percentual: int
+
+
+class ConsorcioOut(BaseModel):
+    carta_credito_centavos: int
+    duracao_meses: int
+    parcela_centavos: int
+    custo_total_centavos: int
+    taxa_administracao_centavos: int
+    taxa_administracao_percentual: Decimal
+    fundo_reserva_centavos: int
+    fundo_reserva_percentual: Decimal
+    reajuste_anual_percentual: Decimal
+    acima_da_margem: bool
+    janela: JanelaOut
+    duracoes_disponiveis: list[int]
+    ressalvas: list[RessalvaOut]
+
+
 class SimulacaoOut(BaseModel):
     id: str
     snapshot_id: str
     objetivo: ObjetivoOut
     financiamento: FinanciamentoOut
+    consorcio: ConsorcioOut
 
 
 FONTE_BCB = "Banco Central do Brasil: taxas médias de aquisição de veículos (pessoa física)"
+
+
+def _percentual(fracao: Decimal) -> Decimal:
+    return (fracao * 100).quantize(Decimal("0.01"))
 
 
 def router(ctx: Contexto) -> APIRouter:
@@ -90,6 +119,16 @@ def router(ctx: Contexto) -> APIRouter:
                 status_code=422,
                 detail=f"Duração indisponível. Opções: {mercado.financiamento_duracoes_meses}.",
             )
+        if (
+            dados.consorcio_duracao_meses is not None
+            and dados.consorcio_duracao_meses not in mercado.consorcio_duracoes_meses
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Duração de grupo indisponível. Opções: {mercado.consorcio_duracoes_meses}."
+                ),
+            )
         resumo = ctx.orcamento(persona_id)
         objetivo = Objetivo(
             item=dados.item,
@@ -105,7 +144,9 @@ def router(ctx: Contexto) -> APIRouter:
             ),
             mercado,
             duracao_meses=dados.duracao_meses,
+            consorcio_duracao_meses=dados.consorcio_duracao_meses,
         )
+        c = simulacao.consorcio
         f = simulacao.financiamento
         saida = SimulacaoOut(
             id=str(uuid.uuid4()),
@@ -138,6 +179,21 @@ def router(ctx: Contexto) -> APIRouter:
                     url="https://www.bcb.gov.br/estatisticas/txjuros",
                 ),
                 ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in f.ressalvas],
+            ),
+            consorcio=ConsorcioOut(
+                carta_credito_centavos=c.carta_credito_centavos,
+                duracao_meses=c.duracao_meses,
+                parcela_centavos=c.parcela_centavos,
+                custo_total_centavos=c.custo_total_centavos,
+                taxa_administracao_centavos=c.taxa_administracao_centavos,
+                taxa_administracao_percentual=_percentual(mercado.consorcio_taxa_administracao),
+                fundo_reserva_centavos=c.fundo_reserva_centavos,
+                fundo_reserva_percentual=_percentual(mercado.consorcio_fundo_reserva),
+                reajuste_anual_percentual=_percentual(mercado.consorcio_reajuste_anual),
+                acima_da_margem=c.acima_da_margem,
+                janela=JanelaOut(**vars(c.janela)),
+                duracoes_disponiveis=sorted(mercado.consorcio_duracoes_meses),
+                ressalvas=[RessalvaOut(codigo=r.codigo, texto=r.texto) for r in c.ressalvas],
             ),
         )
         ctx.simulacoes[saida.id] = (persona_id, saida)
