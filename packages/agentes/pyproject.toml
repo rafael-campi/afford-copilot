@@ -1,0 +1,13 @@
+[project]
+name = "afford-agentes"
+version = "0.1.0"
+description = "LangGraph orchestrator, tools and the LLMClient port."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.12.22,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "agentes"

@@ -1,0 +1,13 @@
+[project]
+name = "afford-api"
+version = "0.1.0"
+description = "HTTP API: accounts, consent, masking, audit and conversations."
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.32"]
+
+[build-system]
+requires = ["uv_build>=0.12.22,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "api"

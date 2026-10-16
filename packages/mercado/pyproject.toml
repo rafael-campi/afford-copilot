@@ -1,0 +1,13 @@
+[project]
+name = "afford-mercado"
+version = "0.1.0"
+description = "Ingestion of dated, versioned market data snapshots (BCB rates, Focus projections)."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.12.22,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "mercado"
