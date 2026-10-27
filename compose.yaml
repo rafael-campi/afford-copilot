@@ -28,6 +28,8 @@ services:
       AFFORD_FOCUS_DIR: /app/data/mercado/focus
       AFFORD_RAG_DIR: /app/data/rag/documentos
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AFFORD_MODELOS: ${AFFORD_MODELOS:-}
     ports:
       - "8000:8000"
     depends_on:

@@ -11,6 +11,7 @@ import sys
 from collections import Counter
 
 from fastapi.testclient import TestClient
+from test_recomendacoes import entrar
 
 from api.config import Config
 from api.main import create_app
@@ -19,11 +20,11 @@ from seed.personas import PERSONAS
 
 
 def avaliar(seed: int = 2026) -> int:
-    http = TestClient(create_app(Config(seed=seed)))
     total_acertos = total = 0
     print(f"{'Persona':<8} {'acertos':>8} {'total':>6} {'acurácia':>9}   pelo modelo")
     for persona in PERSONAS:
-        http.post("/v1/sessoes/demo", json={"persona_id": persona.id})
+        http = TestClient(create_app(Config(seed=seed)))
+        entrar(http, persona.id)
         transacoes = http.get("/v1/extrato").json()["transacoes"]
         gabarito = gerar_extrato(persona.id, seed).gabarito
         acertos = sum(t["categoria"] == g for t, g in zip(transacoes, gabarito, strict=True))

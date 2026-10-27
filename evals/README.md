@@ -18,7 +18,7 @@ recommendation), never copied from the code's output.
 ```sh
 uv run python evals/rodar.py --deterministicos   # free: recommendations only
 uv run python evals/rodar.py                      # full suite, needs Anthropic credentials
-uv run python evals/rodar.py --modelo entender_pedido=claude-sonnet-5-5   # per-task model
+uv run python evals/rodar.py --modelo entender_pedido=anthropic:claude-sonnet-5-5   # per-task model
 ```
 
 The full suite makes about 100 model calls (50 scenarios, some with a judge call). Every run
@@ -30,6 +30,32 @@ Other evals that need no model:
 uv run python evals/rag_recuperacao.py   # retrieval recall/MRR on the real corpus
 uv run python evals/categorizacao.py     # categorization accuracy (rules only without a key)
 ```
+
+## Model matrix
+
+`matriz.py` runs the model evals plus categorization once per candidate, each candidate
+answering every task, and writes a comparison to `evals/relatorios/matriz-<timestamp>.md`:
+quality per eval type, and per task the number of calls, p95 latency, reliability (calls that
+returned a valid answer) and cost. It runs on demand only, never in CI.
+
+```sh
+uv run python evals/matriz.py \
+    anthropic:claude-opus-5-5 \
+    openai:<model> \
+    openai-compat:qwen3-32b@http://localhost:11434/v1 \
+    --precos precos.json
+```
+
+Candidates use the `AFFORD_MODELOS` syntax. It needs `ANTHROPIC_API_KEY` (the judge is always
+the default Claude model) and `OPENAI_API_KEY` for `openai:` candidates. Prices are not kept in
+the repository; copy them from each provider's pricing page into a file like
+`{"<candidate>": {"entrada": <input price>, "saida": <output price>}}` (US$ per million tokens).
+Without one, the cost column shows `-`.
+
+Pick a model per task from the table and set it with `AFFORD_MODELOS`, e.g.
+`entender_pedido=anthropic:claude-haiku-5-5,categorizar=openai-compat:qwen3-32b@http://...`.
+Tasks: `entender_pedido`, `categorizar`, `reordenar_trechos`, `responder_regra`,
+`explicar_recomendacao`. Tasks left out use `*`, or Claude Opus 5.5 without it.
 
 ## CI
 

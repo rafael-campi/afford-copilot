@@ -48,7 +48,9 @@ class Config:
     hasher: PasswordHasher = field(default_factory=PasswordHasher)
     """argon2id with the library's recommended parameters."""
     llm: LLMClient | None = None
-    """None builds the Claude adapter on first use."""
+    """None builds the adapters from `modelos` on first use."""
+    modelos: str = field(default_factory=lambda: os.environ.get("AFFORD_MODELOS", ""))
+    """Model per task, e.g. `entender_pedido=anthropic:claude-haiku-5-5,*=openai:gpt-x`."""
     session_secret: str = field(
         default_factory=lambda: os.environ.get("AFFORD_SESSION_SECRET", "dev-only-secret")
     )

@@ -23,6 +23,7 @@ from test_recomendacoes import entrar
 
 from agentes.anthropic_llm import AnthropicLLM
 from agentes.guardrails import FORA_DO_ESCOPO, SO_VEICULOS
+from agentes.roteador import montar_llm
 from api.config import Config
 from api.fatos import fatos_da_simulacao
 from api.main import create_app
@@ -75,7 +76,7 @@ def recomendacoes() -> list[Resultado]:
 def extracoes(llm: Any) -> list[Resultado]:
     resultados = []
     for c in EXTRACOES:
-        objetivo = _mensagem(_sessao(llm), c.mensagem)["objetivo"]
+        objetivo = _mensagem(_sessao(llm), c.mensagem).get("objetivo") or {}
         errados = [k for k, v in c.esperado.items() if not _confere(v, objetivo.get(k), k)]
         detalhe = "ok" if not errados else f"errados {errados}: {objetivo}"
         resultados.append(Resultado(c.id, "extracao", not errados, detalhe))
@@ -86,7 +87,7 @@ def guardrails(llm: Any) -> list[Resultado]:
     resultados = []
     for c in GUARDRAILS:
         r = _mensagem(_sessao(llm), c.mensagem)
-        texto = r["resposta"]
+        texto = r.get("resposta", r.get("detail", ""))
         obtido = (
             "fora_do_escopo"
             if texto == FORA_DO_ESCOPO
@@ -126,7 +127,7 @@ def regras(llm: Any, juiz: Any) -> list[Resultado]:
                 citou and fiel,
                 f"citou={citou} nota={julgamento.nota if julgamento else '-'}",
                 {
-                    "resposta": r["resposta"],
+                    "resposta": r.get("resposta", r.get("detail")),
                     "julgamento": julgamento.model_dump() if julgamento else None,
                 },
             )
@@ -186,13 +187,14 @@ def main() -> int:
     parser.add_argument("--deterministicos", action="store_true")
     parser.add_argument("--comparar", type=Path)
     parser.add_argument("--tolerancia", type=float, default=5.0)
-    parser.add_argument("--modelo", help="task=model pairs, e.g. entender_pedido=claude-sonnet-5-5")
+    parser.add_argument(
+        "--modelo", help="AFFORD_MODELOS syntax, e.g. entender_pedido=anthropic:claude-sonnet-5-5"
+    )
     args = parser.parse_args()
 
     etapas: list[Callable[[], list[Resultado]]] = [recomendacoes]
     if not args.deterministicos:
-        modelos = dict(p.split("=", 1) for p in args.modelo.split(",")) if args.modelo else {}
-        llm, juiz = AnthropicLLM(modelos=modelos), AnthropicLLM()
+        llm, juiz = montar_llm(args.modelo or ""), AnthropicLLM()
         etapas += [
             lambda: extracoes(llm),
             lambda: guardrails(llm),

@@ -31,8 +31,11 @@ class AnthropicLLM:
         modelos: dict[str, str] | None = None,
         esforco: dict[str, str] | None = None,
         cliente: anthropic.Anthropic | None = None,
+        modelo_padrao: str = MODELO_PADRAO,
     ) -> None:
         self.modelos = modelos or {}
+        self.modelo_padrao = modelo_padrao
+        self.ultimo_uso: tuple[int, int] | None = None
         self.esforco = esforco or {}
         self._cliente = cliente
 
@@ -62,6 +65,7 @@ class AnthropicLLM:
             raise ModeloIndisponivel("Sem credenciais da Anthropic.") from erro
         if resposta.stop_reason == "refusal":
             raise RecusaDoModelo(tarefa)
+        self.ultimo_uso = (resposta.usage.input_tokens, resposta.usage.output_tokens)
         conteudo = next(b.text for b in resposta.content if b.type == "text")
         return esquema.model_validate_json(conteudo)
 
@@ -73,7 +77,7 @@ class AnthropicLLM:
         saida: BetaOutputConfigParam,
     ) -> BetaMessage:
         return self.cliente.beta.messages.create(
-            model=self.modelos.get(tarefa, MODELO_PADRAO),
+            model=self.modelos.get(tarefa, self.modelo_padrao),
             max_tokens=4096,
             system=sistema,
             messages=mensagens,

@@ -6,8 +6,8 @@ from fastapi import HTTPException, Request
 from sqlalchemy import delete, select
 
 from agentes import LLMClient, ModeloIndisponivel, RecusaDoModelo
-from agentes.anthropic_llm import AnthropicLLM
 from agentes.categorizacao import categorizar_restantes
+from agentes.roteador import montar_llm
 from api.auditoria import LLMAuditado
 from api.banco import (
     Consentimento,
@@ -97,7 +97,7 @@ class Contexto:
 
     def llm(self) -> LLMClient:
         if self._llm is None:
-            self._llm = self.config.llm or AnthropicLLM()
+            self._llm = self.config.llm or montar_llm(self.config.modelos)
         return self._llm
 
     def llm_da_conta(self, conta_id: str) -> LLMClient:
