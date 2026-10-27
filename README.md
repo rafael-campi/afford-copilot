@@ -16,6 +16,9 @@ docker compose up --build
 - API: http://localhost:8000 (docs at `/docs`)
 - Postgres with pgvector: `localhost:5432` (user, password and database: `afford`)
 
+The copilot calls Claude with `ANTHROPIC_API_KEY`. `AFFORD_MODELOS` picks a model per task
+(Anthropic, OpenAI or an OpenAI-compatible server); see [evals/README.md](evals/README.md#model-matrix).
+
 ## Develop
 
 Requirements: [uv](https://docs.astral.sh/uv/) and Node 24.
